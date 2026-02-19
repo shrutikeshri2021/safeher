@@ -379,18 +379,34 @@ export function updateStatusCard(state, title, sub) {
 
 /** sendEmergencyAlert(source) — full emergency: location + SMS/share + notification */
 export async function sendEmergencyAlert(source = 'sos') {
-  const location = await getCurrentLocation();
-  sendBrowserNotification('🚨 SafeHer EMERGENCY', `SOS alert triggered (${source})! Alerting your contacts.`);
-  const { sendAlertToContacts } = await import('./contacts.js');
-  await sendAlertToContacts(location);
+  try {
+    console.log('🚨 [alerts.js] sendEmergencyAlert called, source:', source);
+    const location = await getCurrentLocation();
+    console.log('📍 [alerts.js] Location obtained:', location);
+    sendBrowserNotification('🚨 SafeHer EMERGENCY', `SOS alert triggered (${source})! Alerting your contacts.`);
+    console.log('📨 [alerts.js] Importing contacts.js...');
+    const { sendAlertToContacts } = await import('./contacts.js');
+    console.log('✅ [alerts.js] contacts.js imported, calling sendAlertToContacts...');
+    await sendAlertToContacts(location);
+    console.log('✅ [alerts.js] sendAlertToContacts completed');
+  } catch (err) {
+    console.error('❌ [alerts.js] sendEmergencyAlert FAILED:', err);
+    showToast('❌ Alert failed: ' + (err?.message || err), 'error');
+  }
 }
 
 /** sendAlert(source) — lighter alert: notification + contact message */
 export async function sendAlert(source = 'motion') {
-  const location = await getCurrentLocation();
-  sendBrowserNotification('⚠️ SafeHer Alert', `${source} alert triggered. Recording evidence.`);
-  const { sendAlertToContacts } = await import('./contacts.js');
-  await sendAlertToContacts(location);
+  try {
+    console.log('⚠️ [alerts.js] sendAlert called, source:', source);
+    const location = await getCurrentLocation();
+    sendBrowserNotification('⚠️ SafeHer Alert', `${source} alert triggered. Recording evidence.`);
+    const { sendAlertToContacts } = await import('./contacts.js');
+    await sendAlertToContacts(location);
+  } catch (err) {
+    console.error('❌ [alerts.js] sendAlert FAILED:', err);
+    showToast('❌ Alert failed: ' + (err?.message || err), 'error');
+  }
 }
 
 /** triggerEmergency(location) — red overlay + siren + alerts */

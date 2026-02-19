@@ -329,55 +329,125 @@ async function sendLocationViaShare() {
 
 /* ══════════════════════════════════════════
    SEND ALERT TO ALL CONTACTS (used by SOS)
+   Uses EmailJS to auto-send real emails to
+   every saved contact — no manual action needed
+   Also triggers SMS and phone calls
    ══════════════════════════════════════════ */
 export async function sendAlertToContacts(location) {
+  console.log('🚨 sendAlertToContacts CALLED', location);
+
   const contacts = getContacts();
+  console.log('📋 Contacts found:', contacts.length, contacts);
+
   if (contacts.length === 0) {
-    showToast('No emergency contacts \u2014 add contacts first', 'warning');
+    showToast('No emergency contacts — add contacts first', 'warning');
     return;
   }
+
+  // Get or ask for user's name (cached in localStorage)
+  let userName = localStorage.getItem('safeher_username');
+  if (!userName) {
+    userName = prompt('Enter your name (for emergency alerts):') || 'SafeHer User';
+    localStorage.setItem('safeher_username', userName);
+  }
+  console.log('👤 User name:', userName);
 
   const lat = location?.lat?.toFixed(6) || 'Unknown';
   const lng = location?.lng?.toFixed(6) || 'Unknown';
   const mapsLink = location
     ? `https://www.google.com/maps?q=${location.lat},${location.lng}`
-    : '';
-  const message = `\ud83d\udea8 EMERGENCY SOS from SafeHer!\n\nI need help! My current location:\nLat: ${lat}, Lng: ${lng}\n${mapsLink}\n\nThis is an automated emergency alert.`;
+    : 'Location unavailable';
+  const timeNow = new Date().toLocaleString();
 
-  // Try Web Share API first
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: '\ud83d\udea8 SafeHer Emergency Alert', text: message });
-      showToast('Emergency alert shared', 'success');
-      return;
-    } catch (err) {
-      if (err.name !== 'AbortError') { /* fall through */ }
+  console.log('📍 Location:', lat, lng);
+  console.log('🔗 Maps link:', mapsLink);
+
+  const smsMessage = `🚨 EMERGENCY! ${userName} is in DANGER and needs IMMEDIATE help!\n\n📍 Location: ${mapsLink}\n📍 Lat: ${lat}, Lng: ${lng}\n⏰ Time: ${timeNow}\n\n📞 CALL THEM NOW or contact police!\n\n— SafeHer Safety App`;
+
+  // ═══ 1. AUTO-SEND EMAILS via EmailJS to ALL contacts ═══
+  const emailContacts = contacts.filter(c => c.email);
+  console.log('📧 Contacts with email:', emailContacts.length, emailContacts.map(c => c.email));
+  console.log('📧 EmailJS available:', typeof emailjs !== 'undefined');
+
+  if (emailContacts.length > 0 && typeof emailjs !== 'undefined') {
+    showToast('📧 Sending emergency emails…', 'info');
+    let emailsSent = 0;
+    let emailsFailed = 0;
+
+    const emailPromises = emailContacts.map(contact => {
+      const templateParams = {
+        to_email: contact.email,
+        from_name: userName,
+        location_link: mapsLink,
+        time: timeNow,
+        message: `🚨🚨🚨 EMERGENCY ALERT 🚨🚨🚨\n\n${userName} IS IN DANGER AND NEEDS IMMEDIATE HELP!\n\n📍 LOCATION:\n${mapsLink}\n\n📍 Coordinates: Lat ${lat}, Lng ${lng}\n\n⏰ Time: ${timeNow}\n\n📞 Please CALL them immediately or contact local police!\n\nThis is an automated SOS alert from SafeHer Safety App.`
+      };
+      console.log(`📨 Sending email to ${contact.name}:`, templateParams);
+
+      return emailjs.send('service_y8b36ls', 'template_58mvinn', templateParams)
+        .then((response) => {
+          emailsSent++;
+          console.log(`✅ Email SENT to ${contact.name} (${contact.email})`, response);
+        }).catch(err => {
+          emailsFailed++;
+          console.error(`❌ Email FAILED for ${contact.name} (${contact.email}):`, err);
+        });
+    });
+
+    await Promise.allSettled(emailPromises);
+
+    if (emailsSent > 0) {
+      showToast(`✅ Emergency email sent to ${emailsSent} contact${emailsSent > 1 ? 's' : ''}!`, 'success');
     }
+    if (emailsFailed > 0) {
+      showToast(`⚠️ ${emailsFailed} email${emailsFailed > 1 ? 's' : ''} failed to send`, 'warning');
+    }
+  } else if (emailContacts.length === 0) {
+    showToast('⚠️ No emails saved — add emails to contacts for auto-alerts', 'warning');
+  } else {
+    console.error('❌ EmailJS is NOT loaded! typeof emailjs =', typeof emailjs);
+    showToast('❌ Email service not loaded — check internet connection', 'error');
   }
 
-  // Fallback: open SMS
-  const phones  = contacts.map(c => c.phone).filter(Boolean).join(',');
-  const smsBody = encodeURIComponent(message);
-  const smsLink = `sms:${phones}?body=${smsBody}`;
-  try {
-    window.open(smsLink, '_self');
-    showToast('Opening SMS\u2026', 'info');
-  } catch {
-    try {
-      await navigator.clipboard.writeText(message);
-      showToast('Emergency message copied \u2014 send it manually', 'warning');
-    } catch {
-      showToast('Share your location manually', 'info');
-    }
+  // ═══ 2. AUTO-TRIGGER SMS to ALL contacts (opens SMS app with message) ═══
+  const phoneContacts = contacts.filter(c => c.phone);
+  if (phoneContacts.length > 0) {
+    const phones = phoneContacts.map(c => c.phone).join(',');
+    const smsBody = encodeURIComponent(smsMessage);
+    const smsLink = `sms:${phones}?body=${smsBody}`;
+    // Use hidden <a> tag so it doesn't navigate away from the app
+    const a = document.createElement('a');
+    a.href = smsLink;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 100);
+    showToast('📱 Opening SMS with emergency message…', 'info');
   }
 
-  // Also try email if any emails exist
-  const emails = contacts.map(c => c.email).filter(Boolean);
-  if (emails.length > 0) {
-    const subject  = encodeURIComponent('\ud83d\udea8 EMERGENCY SOS \u2014 SafeHer');
-    const body     = encodeURIComponent(message);
-    const mailLink = `mailto:${emails.join(',')}?subject=${subject}&body=${body}`;
-    try { window.open(mailLink, '_blank'); } catch { /* ignore */ }
+  // ═══ 3. AUTO-TRIGGER PHONE CALL to first contact ═══
+  // (Browsers can only dial one number at a time via tel: link)
+  if (phoneContacts.length > 0) {
+    // Delay call trigger slightly so SMS opens first
+    setTimeout(() => {
+      const firstPhone = phoneContacts[0].phone;
+      const telLink = `tel:${firstPhone}`;
+      const a = document.createElement('a');
+      a.href = telLink;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => a.remove(), 100);
+      showToast(`📞 Calling ${phoneContacts[0].name} (${firstPhone})…`, 'info');
+
+      // Show remaining numbers to call if more than 1 contact
+      if (phoneContacts.length > 1) {
+        setTimeout(() => {
+          const otherNames = phoneContacts.slice(1).map(c => `${c.name}: ${c.phone}`).join('\n');
+          showToast(`📞 Also call:\n${otherNames}`, 'warning');
+        }, 2000);
+      }
+    }, 1500);
   }
 }
 
