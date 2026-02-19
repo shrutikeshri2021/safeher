@@ -330,8 +330,8 @@ async function sendLocationViaShare() {
 /* ══════════════════════════════════════════
    SEND ALERT TO ALL CONTACTS (used by SOS)
    Uses EmailJS to auto-send real emails to
-   every saved contact — no manual action needed
-   Also triggers SMS and phone calls
+   every saved contact — FULLY AUTOMATIC
+   No manual sending needed at all
    ══════════════════════════════════════════ */
 export async function sendAlertToContacts(location) {
   console.log('🚨 sendAlertToContacts CALLED', location);
@@ -362,15 +362,13 @@ export async function sendAlertToContacts(location) {
   console.log('📍 Location:', lat, lng);
   console.log('🔗 Maps link:', mapsLink);
 
-  const smsMessage = `🚨 EMERGENCY! ${userName} is in DANGER and needs IMMEDIATE help!\n\n📍 Location: ${mapsLink}\n📍 Lat: ${lat}, Lng: ${lng}\n⏰ Time: ${timeNow}\n\n📞 CALL THEM NOW or contact police!\n\n— SafeHer Safety App`;
-
-  // ═══ 1. AUTO-SEND EMAILS via EmailJS to ALL contacts ═══
+  // ═══ FULLY AUTOMATIC EMAIL via EmailJS to ALL contacts ═══
   const emailContacts = contacts.filter(c => c.email);
   console.log('📧 Contacts with email:', emailContacts.length, emailContacts.map(c => c.email));
   console.log('📧 EmailJS available:', typeof emailjs !== 'undefined');
 
   if (emailContacts.length > 0 && typeof emailjs !== 'undefined') {
-    showToast('📧 Sending emergency emails…', 'info');
+    showToast('📧 Sending emergency alerts automatically…', 'info');
     let emailsSent = 0;
     let emailsFailed = 0;
 
@@ -397,57 +395,16 @@ export async function sendAlertToContacts(location) {
     await Promise.allSettled(emailPromises);
 
     if (emailsSent > 0) {
-      showToast(`✅ Emergency email sent to ${emailsSent} contact${emailsSent > 1 ? 's' : ''}!`, 'success');
+      showToast(`✅ Alert auto-sent to ${emailsSent} contact${emailsSent > 1 ? 's' : ''}!`, 'success');
     }
     if (emailsFailed > 0) {
-      showToast(`⚠️ ${emailsFailed} email${emailsFailed > 1 ? 's' : ''} failed to send`, 'warning');
+      showToast(`⚠️ ${emailsFailed} alert${emailsFailed > 1 ? 's' : ''} failed`, 'warning');
     }
   } else if (emailContacts.length === 0) {
     showToast('⚠️ No emails saved — add emails to contacts for auto-alerts', 'warning');
   } else {
     console.error('❌ EmailJS is NOT loaded! typeof emailjs =', typeof emailjs);
     showToast('❌ Email service not loaded — check internet connection', 'error');
-  }
-
-  // ═══ 2. AUTO-TRIGGER SMS to ALL contacts (opens SMS app with message) ═══
-  const phoneContacts = contacts.filter(c => c.phone);
-  if (phoneContacts.length > 0) {
-    const phones = phoneContacts.map(c => c.phone).join(',');
-    const smsBody = encodeURIComponent(smsMessage);
-    const smsLink = `sms:${phones}?body=${smsBody}`;
-    // Use hidden <a> tag so it doesn't navigate away from the app
-    const a = document.createElement('a');
-    a.href = smsLink;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => a.remove(), 100);
-    showToast('📱 Opening SMS with emergency message…', 'info');
-  }
-
-  // ═══ 3. AUTO-TRIGGER PHONE CALL to first contact ═══
-  // (Browsers can only dial one number at a time via tel: link)
-  if (phoneContacts.length > 0) {
-    // Delay call trigger slightly so SMS opens first
-    setTimeout(() => {
-      const firstPhone = phoneContacts[0].phone;
-      const telLink = `tel:${firstPhone}`;
-      const a = document.createElement('a');
-      a.href = telLink;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => a.remove(), 100);
-      showToast(`📞 Calling ${phoneContacts[0].name} (${firstPhone})…`, 'info');
-
-      // Show remaining numbers to call if more than 1 contact
-      if (phoneContacts.length > 1) {
-        setTimeout(() => {
-          const otherNames = phoneContacts.slice(1).map(c => `${c.name}: ${c.phone}`).join('\n');
-          showToast(`📞 Also call:\n${otherNames}`, 'warning');
-        }, 2000);
-      }
-    }, 1500);
   }
 }
 
