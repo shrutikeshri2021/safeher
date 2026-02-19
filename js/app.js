@@ -9,7 +9,7 @@ import * as sosButton from './sosButton.js';
 import * as motionDetect from './motionDetect.js';
 import * as voiceDetect from './voiceDetect.js';
 import { initContactsUI } from './contacts.js';
-import { renderRecordings, initRecorderUI, startAudioRecording, stopRecording, isRecording } from './recorder.js';
+import * as recorder from './recorder.js';
 import { initMap, startJourney, stopJourney, shareLocation, refreshMap } from './mapJourney.js';
 import { showToast, showFakeCall, hideFakeCall } from './alerts.js';
 
@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   sosButton.setAppState(AppState);
   motionDetect.setAppState(AppState);
   voiceDetect.setAppState(AppState);
+  recorder.setAppState(AppState);
 
   /* ── Screen navigation ── */
   initNavigation();
@@ -42,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
   safeMode.init();
   sosButton.init();
   initContactsUI();
-  initRecorderUI();
+  recorder.init();
 
   /* ── Quick actions ── */
   wireQuickActions();
@@ -83,7 +84,7 @@ function initNavigation() {
       if (target === 'journey') {
         setTimeout(() => { initMap(); refreshMap(); }, 100);
       }
-      if (target === 'recordings') renderRecordings();
+      if (target === 'recordings') recorder.renderRecordings();
     });
   });
 }
@@ -100,13 +101,11 @@ function wireQuickActions() {
   const btnRecord = document.getElementById('btn-quick-record');
   if (btnRecord) {
     btnRecord.addEventListener('click', () => {
-      if (isRecording()) {
-        stopRecording();
-        btnRecord.querySelector('span')?.replaceChildren(document.createTextNode('Record'));
+      if (recorder.isRecording()) {
+        recorder.stopRecording();
         showToast('Recording stopped', 'info');
       } else {
-        startAudioRecording();
-        btnRecord.querySelector('span')?.replaceChildren(document.createTextNode('Stop'));
+        recorder.startRecording('manual');
         showToast('Recording started', 'success');
       }
     });
