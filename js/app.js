@@ -10,7 +10,7 @@ import * as motionDetect from './motionDetect.js';
 import * as voiceDetect from './voiceDetect.js';
 import { initContactsUI } from './contacts.js';
 import * as recorder from './recorder.js';
-import { initMap, startJourney, stopJourney, shareLocation, refreshMap } from './mapJourney.js';
+import { initMap, shareLocation, refreshMap } from './mapJourney.js';
 import { showToast, showFakeCall, hideFakeCall } from './alerts.js';
 
 /* ══════════════════════════════════════════
@@ -76,15 +76,32 @@ function initNavigation() {
   btns.forEach(btn => {
     btn.addEventListener('click', () => {
       const target = btn.dataset.screen;
+
+      // Update nav buttons
       btns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      screens.forEach(s => s.classList.toggle('hidden', s.id !== `screen-${target}`));
 
-      // Lazy inits
+      // Show target screen, hide others (use active class, remove hidden)
+      screens.forEach(s => {
+        if (s.id === `screen-${target}`) {
+          s.classList.add('active');
+          s.classList.remove('hidden');
+        } else {
+          s.classList.remove('active');
+          s.classList.remove('hidden');
+        }
+      });
+
+      // Lazy inits per tab
       if (target === 'journey') {
-        setTimeout(() => { initMap(); refreshMap(); }, 100);
+        setTimeout(() => { initMap(); refreshMap(); }, 150);
       }
-      if (target === 'recordings') recorder.renderRecordings();
+      if (target === 'contacts') {
+        import('./contacts.js').then(m => m.renderContacts());
+      }
+      if (target === 'recordings') {
+        recorder.renderRecordings();
+      }
     });
   });
 }
@@ -131,22 +148,10 @@ function wireQuickActions() {
    JOURNEY BUTTONS
    ══════════════════════════════════════════ */
 function wireJourney() {
-  const startBtn = document.getElementById('btn-start-journey');
-  const stopBtn = document.getElementById('btn-stop-journey');
-
-  if (startBtn) startBtn.addEventListener('click', () => {
-    startJourney();
-    startBtn.classList.add('hidden');
-    if (stopBtn) stopBtn.classList.remove('hidden');
-    showToast('Journey started — tracking your route', 'success');
-  });
-
-  if (stopBtn) stopBtn.addEventListener('click', () => {
-    stopJourney();
-    stopBtn.classList.add('hidden');
-    if (startBtn) startBtn.classList.remove('hidden');
-    showToast('Journey ended', 'info');
-  });
+  // Journey start / stop buttons are wired inside mapJourney.initMap()
+  // Here we only wire the share button on the journey screen
+  const shareBtn = document.getElementById('btn-share-journey');
+  if (shareBtn) shareBtn.addEventListener('click', () => shareLocation());
 }
 
 /* ══════════════════════════════════════════

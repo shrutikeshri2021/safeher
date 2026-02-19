@@ -1,7 +1,8 @@
 /* ═══════════════════════════════════════════════
-   SafeHer — Camera Recording & IndexedDB  (Step 8)
+   SafeHer — Camera Recording & IndexedDB
    Database: SafeHerDB, store: recordings
-   Auto-increment, 60 s auto-stop, GPS stamp
+   Records until manually stopped, stored in DB,
+   displayed with playable filename in frontend
    ═══════════════════════════════════════════════ */
 
 import { showToast } from './alerts.js';
@@ -20,34 +21,32 @@ let db               = null;
 let mediaRecorder    = null;
 let recordedChunks   = [];
 let recordingStart   = null;
-let currentType      = null;     // 'sos' | 'motion' | 'voice' | 'manual'
+let currentType      = null;     // 'audio' | 'video' | 'sos' | 'motion' | 'voice' | 'manual'
 let currentStream    = null;
-let autoStopTimer    = null;
 let locationAtStart  = null;
 let timerInterval    = null;
+let currentMediaType = null;     // 'audio' or 'video' — what user tapped
+let activePlayback   = null;     // currently playing <audio>/<video> element
 
 /* ══════════════════════════════════════════
    init()
-   Open / create IndexedDB, store reference
    ══════════════════════════════════════════ */
 export async function init() {
   db = await openDB();
-  renderRecordings();
   wireRecorderUI();
+  renderRecordings();
 }
 
 function openDB() {
   return new Promise((resolve, reject) => {
     if (db) { resolve(db); return; }
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-
     req.onupgradeneeded = (e) => {
       const database = e.target.result;
       if (!database.objectStoreNames.contains(STORE_NAME)) {
         database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
       }
     };
-
     req.onsuccess = (e) => { db = e.target.result; resolve(db); };
     req.onerror   = ()  => reject(req.error);
   });
@@ -55,34 +54,36 @@ function openDB() {
 
 /* ══════════════════════════════════════════
    startRecording(type)
-   type: 'sos' | 'motion' | 'voice' | 'manual'
-   • Guard if already recording
-   • getUserMedia(video + audio)
-   • MediaRecorder, collect every 1 s
-   • Auto-stop after 60 s
-   • Store GPS at start
+   Records until YOU manually stop it.
+   No auto-stop timer.
    ══════════════════════════════════════════ */
 export async function startRecording(type = 'manual') {
   if (mediaRecorder && mediaRecorder.state === 'recording') return;
 
+  const wantVideo = (type === 'video');
+
   try {
-    currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    if (wantVideo) {
+      currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    } else {
+      currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    }
   } catch (_) {
-    // Camera denied → fall back to audio-only
+    // If video fails, fallback to audio
     try {
       currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
-      showToast('Could not access camera or microphone — please allow access', 'error');
+      showToast('Could not access microphone — please allow access', 'error');
       return;
     }
   }
 
-  recordedChunks = [];
-  currentType    = type;
-  recordingStart = Date.now();
+  recordedChunks  = [];
+  currentType     = type;
+  currentMediaType = wantVideo ? 'video' : 'audio';
+  recordingStart  = Date.now();
   locationAtStart = await grabGPS();
 
-  // Choose best supported mime type
   const mimeType = pickMime(currentStream);
 
   mediaRecorder = new MediaRecorder(currentStream, { mimeType });
@@ -94,44 +95,54 @@ export async function startRecording(type = 'manual') {
   mediaRecorder.onstop = async () => {
     const blob     = new Blob(recordedChunks, { type: mimeType });
     const duration = Math.round((Date.now() - recordingStart) / 1000);
+    const hasVideo = currentStream ? currentStream.getVideoTracks().length > 0 : false;
+
+    // Build a human-readable filename
+    const ts     = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    const ext    = hasVideo ? 'webm' : 'webm';
+    const fname  = `SafeHer_${currentType || 'rec'}_${ts}.${ext}`;
 
     const record = {
       timestamp:       Date.now(),
-      type:            currentType,
+      type:            currentType || 'manual',
+      mediaKind:       hasVideo ? 'video' : 'audio',
       blob,
       duration,
-      locationAtStart
+      locationAtStart,
+      filename:        fname,
+      mimeType
     };
 
     try {
       if (!db) db = await openDB();
       await saveRecord(record);
-      showToast('📹 Recording saved to device', 'success');
+      showToast(`📹 ${fname} saved to device`, 'success');
     } catch (err) {
       showToast('Could not save recording', 'error');
     }
 
-    // Cleanup stream tracks
+    // Cleanup stream
     if (currentStream) {
       currentStream.getTracks().forEach(t => t.stop());
       currentStream = null;
     }
     currentType = null;
+    currentMediaType = null;
+
+    if (AppState) AppState.isRecording = false;
+
+    // Reset UI
+    resetRecordingUI();
     renderRecordings();
-    updateQuickActionCard(false);
     updateRecordingBadge();
   };
 
-  mediaRecorder.start(1000);            // collect data every 1 second
+  mediaRecorder.start(1000);
 
   if (AppState) AppState.isRecording = true;
-  updateQuickActionCard(true);
-
-  // Auto-stop after 60 seconds (clearable)
-  autoStopTimer = setTimeout(() => stopRecording(), 60000);
-
-  // Live elapsed timer on recording UI
+  showRecordingUI();
   startLiveTimer();
+  showToast(`🔴 ${wantVideo ? 'Video' : 'Audio'} recording started — tap Stop to finish`, 'info');
 }
 
 /* ══════════════════════════════════════════
@@ -139,12 +150,8 @@ export async function startRecording(type = 'manual') {
    ══════════════════════════════════════════ */
 export function stopRecording() {
   if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
-
   mediaRecorder.stop();
-
-  if (autoStopTimer) { clearTimeout(autoStopTimer); autoStopTimer = null; }
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-
   if (AppState) AppState.isRecording = false;
 }
 
@@ -174,15 +181,14 @@ export async function deleteRecording(id) {
   });
 }
 
-/* ══════════════════════════════════════════
-   isRecording()  — convenience getter
-   ══════════════════════════════════════════ */
 export function isRecording() {
   return !!(mediaRecorder && mediaRecorder.state === 'recording');
 }
 
 /* ══════════════════════════════════════════
    RENDER RECORDINGS LIST
+   Shows filename, duration, play inline,
+   download, delete
    ══════════════════════════════════════════ */
 export async function renderRecordings() {
   const listEl  = document.getElementById('recordings-list');
@@ -192,8 +198,14 @@ export async function renderRecordings() {
   let recordings = [];
   try { recordings = await getAllRecordings(); } catch (_) {}
 
-  // Remove existing cards (keep the empty-state element)
+  // Remove old cards but keep the empty-state element
   listEl.querySelectorAll('.recording-card').forEach(el => el.remove());
+
+  // Stop any active inline playback
+  if (activePlayback) {
+    try { activePlayback.pause(); } catch (_) {}
+    activePlayback = null;
+  }
 
   if (recordings.length === 0) {
     if (emptyEl) emptyEl.classList.remove('hidden');
@@ -208,32 +220,28 @@ export async function renderRecordings() {
     card.className = 'recording-card';
     card.dataset.id = rec.id;
 
-    const date    = new Date(rec.timestamp);
-    const timeStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-                  + ' ' + date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-
-    const hasVideo = rec.blob?.type?.includes('video');
-    const iconSvg  = hasVideo
-      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>'
-      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>';
-
-    const typeLabel = rec.type ? rec.type.charAt(0).toUpperCase() + rec.type.slice(1) : (hasVideo ? 'Video' : 'Audio');
+    const isVideo = rec.mediaKind === 'video' || rec.blob?.type?.includes('video');
+    const icon    = isVideo ? '🎬' : '🎙️';
+    const fname   = rec.filename || `Recording_${rec.id}`;
 
     card.innerHTML = `
-      <div class="recording-icon ${hasVideo ? 'recording-icon--video' : 'recording-icon--audio'}">${iconSvg}</div>
-      <div class="recording-info">
-        <h5>${typeLabel} Recording</h5>
-        <p>${timeStr} · ${fmtDuration(rec.duration)}${rec.locationAtStart ? ' · 📍' : ''}</p>
+      <div class="recording-icon" style="font-size:1.5rem;min-width:40px;text-align:center;">${icon}</div>
+      <div class="recording-info" style="flex:1;min-width:0;">
+        <h5 style="margin:0 0 2px;font-size:.85rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(fname)}</h5>
+        <p style="margin:0;font-size:.75rem;color:var(--text-secondary);">
+          ${fmtDuration(rec.duration)} · ${new Date(rec.timestamp).toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}${rec.locationAtStart ? ' · 📍' : ''}
+        </p>
+        <div class="rec-player-slot" data-id="${rec.id}"></div>
       </div>
-      <div class="recording-actions">
-        <button class="btn-play" aria-label="Play" data-id="${rec.id}">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <div class="recording-actions" style="display:flex;gap:6px;align-items:center;">
+        <button class="btn-play" aria-label="Play" data-id="${rec.id}" style="background:none;border:none;cursor:pointer;color:var(--accent-green);padding:6px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </button>
-        <button class="btn-download" aria-label="Download" data-id="${rec.id}">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <button class="btn-download" aria-label="Download" data-id="${rec.id}" style="background:none;border:none;cursor:pointer;color:var(--accent-blue);padding:6px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </button>
-        <button class="btn-delete-rec" aria-label="Delete" data-id="${rec.id}">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <button class="btn-delete-rec" aria-label="Delete" data-id="${rec.id}" style="background:none;border:none;cursor:pointer;color:var(--accent-red);padding:6px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         </button>
       </div>
     `;
@@ -243,8 +251,6 @@ export async function renderRecordings() {
 
 /* ══════════════════════════════════════════
    WIRE RECORDER UI
-   Audio / Video buttons + delegation for
-   play / download / delete
    ══════════════════════════════════════════ */
 function wireRecorderUI() {
   const audioBtn = document.getElementById('btn-record-audio');
@@ -253,29 +259,41 @@ function wireRecorderUI() {
 
   if (audioBtn) {
     audioBtn.addEventListener('click', async () => {
-      if (isRecording()) { stopRecording(); }
-      else { await startRecording('manual'); }
+      if (isRecording()) {
+        stopRecording();
+      } else {
+        await startRecording('audio');
+      }
     });
   }
 
   if (videoBtn) {
     videoBtn.addEventListener('click', async () => {
-      if (isRecording()) { stopRecording(); }
-      else { await startRecording('manual'); }
+      if (isRecording()) {
+        stopRecording();
+      } else {
+        await startRecording('video');
+      }
     });
   }
 
-  // Delegate play / download / delete clicks
+  // Delegate play / download / delete
   if (listEl) {
     listEl.addEventListener('click', async (e) => {
       const playBtn = e.target.closest('.btn-play');
       const dlBtn   = e.target.closest('.btn-download');
       const delBtn  = e.target.closest('.btn-delete-rec');
 
-      if (playBtn) await playRecording(Number(playBtn.dataset.id));
-      if (dlBtn)   await downloadRecording(Number(dlBtn.dataset.id));
-
+      if (playBtn) {
+        e.stopPropagation();
+        await playRecordingInline(Number(playBtn.dataset.id));
+      }
+      if (dlBtn) {
+        e.stopPropagation();
+        await downloadRecording(Number(dlBtn.dataset.id));
+      }
       if (delBtn) {
+        e.stopPropagation();
         const card = delBtn.closest('.recording-card');
         if (card) {
           card.style.transition = 'opacity .2s, transform .2s';
@@ -293,30 +311,49 @@ function wireRecorderUI() {
 }
 
 /* ══════════════════════════════════════════
-   PLAYBACK
+   INLINE PLAYBACK (plays right inside the card)
    ══════════════════════════════════════════ */
-async function playRecording(id) {
+async function playRecordingInline(id) {
   try {
+    // Stop any existing playback
+    if (activePlayback) {
+      activePlayback.pause();
+      activePlayback.src = '';
+      activePlayback = null;
+    }
+    // Remove any existing player elements
+    document.querySelectorAll('.rec-inline-player').forEach(el => el.remove());
+
     const all = await getAllRecordings();
     const rec = all.find(r => r.id === id);
     if (!rec?.blob) { showToast('Recording not found', 'error'); return; }
 
-    const url = URL.createObjectURL(rec.blob);
+    const url  = URL.createObjectURL(rec.blob);
+    const slot = document.querySelector(`.rec-player-slot[data-id="${id}"]`);
+    if (!slot) return;
 
-    if (rec.blob.type.includes('video')) {
-      const w = window.open('', '_blank');
-      if (w) {
-        w.document.write(`<html><head><title>SafeHer Recording</title>
-          <style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh}</style>
-          </head><body>
-          <video src="${url}" controls autoplay style="max-width:100%;max-height:100vh"></video>
-          </body></html>`);
-      }
+    const isVideo = rec.mediaKind === 'video' || rec.blob?.type?.includes('video');
+
+    if (isVideo) {
+      const video = document.createElement('video');
+      video.className = 'rec-inline-player';
+      video.src = url;
+      video.controls = true;
+      video.autoplay = true;
+      video.style.cssText = 'width:100%;max-height:200px;border-radius:8px;margin-top:8px;background:#000;';
+      slot.appendChild(video);
+      activePlayback = video;
+      video.onended = () => { URL.revokeObjectURL(url); };
     } else {
-      const audio = new Audio(url);
-      audio.play();
-      showToast('Playing audio…', 'info');
-      audio.onended = () => URL.revokeObjectURL(url);
+      const audio = document.createElement('audio');
+      audio.className = 'rec-inline-player';
+      audio.src = url;
+      audio.controls = true;
+      audio.autoplay = true;
+      audio.style.cssText = 'width:100%;margin-top:8px;';
+      slot.appendChild(audio);
+      activePlayback = audio;
+      audio.onended = () => { URL.revokeObjectURL(url); };
     }
   } catch (_) {
     showToast('Playback error', 'error');
@@ -332,25 +369,79 @@ async function downloadRecording(id) {
     const rec = all.find(r => r.id === id);
     if (!rec?.blob) { showToast('Recording not found', 'error'); return; }
 
-    const ext      = rec.blob.type.includes('video') ? 'webm' : 'webm';
-    const filename = `safeher_${rec.type || 'rec'}_${new Date(rec.timestamp).toISOString().slice(0, 19).replace(/[T:]/g, '-')}.${ext}`;
-    const url = URL.createObjectURL(rec.blob);
-    const a   = document.createElement('a');
-    a.href     = url;
-    a.download = filename;
+    const fname = rec.filename || `safeher_recording_${id}.webm`;
+    const url   = URL.createObjectURL(rec.blob);
+    const a     = document.createElement('a');
+    a.href      = url;
+    a.download  = fname;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`Downloaded ${filename}`, 'success');
+    showToast(`Downloaded ${fname}`, 'success');
   } catch (_) {
     showToast('Download error', 'error');
   }
 }
 
 /* ══════════════════════════════════════════
+   RECORDING UI HELPERS
+   ══════════════════════════════════════════ */
+function showRecordingUI() {
+  const audioBtn = document.getElementById('btn-record-audio');
+  const videoBtn = document.getElementById('btn-record-video');
+  const audioSt  = document.getElementById('audio-rec-status');
+  const videoSt  = document.getElementById('video-rec-status');
+
+  if (audioBtn) audioBtn.classList.add('recording');
+  if (videoBtn) videoBtn.classList.add('recording');
+  if (audioSt) audioSt.textContent = '● Recording…';
+  if (videoSt) videoSt.textContent = '● Recording…';
+
+  // Quick action card
+  const card = document.getElementById('btn-quick-record');
+  if (card) {
+    const span = card.querySelector('span');
+    if (span) span.textContent = '● Stop';
+    card.classList.add('action-card--active');
+  }
+}
+
+function resetRecordingUI() {
+  const audioBtn = document.getElementById('btn-record-audio');
+  const videoBtn = document.getElementById('btn-record-video');
+  const audioSt  = document.getElementById('audio-rec-status');
+  const videoSt  = document.getElementById('video-rec-status');
+
+  if (audioBtn) audioBtn.classList.remove('recording');
+  if (videoBtn) videoBtn.classList.remove('recording');
+  if (audioSt) audioSt.textContent = 'Tap to start';
+  if (videoSt) videoSt.textContent = 'Tap to start';
+
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+  const card = document.getElementById('btn-quick-record');
+  if (card) {
+    const span = card.querySelector('span');
+    if (span) span.textContent = 'Record';
+    card.classList.remove('action-card--active');
+  }
+}
+
+function startLiveTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  const audioSt = document.getElementById('audio-rec-status');
+  const videoSt = document.getElementById('video-rec-status');
+  timerInterval = setInterval(() => {
+    if (!recordingStart) return;
+    const elapsed = Math.round((Date.now() - recordingStart) / 1000);
+    const txt = `● ${fmtDuration(elapsed)}`;
+    if (audioSt) audioSt.textContent = txt;
+    if (videoSt) videoSt.textContent = txt;
+  }, 1000);
+}
+
+/* ══════════════════════════════════════════
    INTERNAL HELPERS
    ══════════════════════════════════════════ */
-
-/** Save a record to IndexedDB */
 function saveRecord(record) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -360,19 +451,19 @@ function saveRecord(record) {
   });
 }
 
-/** Pick best supported MIME type from stream tracks */
 function pickMime(stream) {
   const hasVideo = stream.getVideoTracks().length > 0;
   if (hasVideo) {
     if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) return 'video/webm;codecs=vp9,opus';
     if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) return 'video/webm;codecs=vp8,opus';
-    return 'video/webm';
+    if (MediaRecorder.isTypeSupported('video/webm'))                 return 'video/webm';
+    return 'video/mp4';
   }
   if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
-  return 'audio/webm';
+  if (MediaRecorder.isTypeSupported('audio/webm'))             return 'audio/webm';
+  return 'audio/mp4';
 }
 
-/** Get current GPS position (resolves to {lat,lng} or null) */
 function grabGPS() {
   return new Promise(resolve => {
     if (!navigator.geolocation) { resolve(null); return; }
@@ -384,7 +475,6 @@ function grabGPS() {
   });
 }
 
-/** Format seconds → m:ss */
 function fmtDuration(sec) {
   if (!sec && sec !== 0) return '0:00';
   const m = Math.floor(sec / 60);
@@ -392,30 +482,20 @@ function fmtDuration(sec) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-/** Update the Quick Action "Auto Record" card ON/OFF status */
-function updateQuickActionCard(on) {
-  const card = document.getElementById('btn-quick-record');
-  if (!card) return;
-  const span = card.querySelector('span');
-  if (span) span.textContent = on ? '● Recording' : 'Record';
-  card.classList.toggle('action-card--active', on);
-}
-
-/** Update recordings count badge on bottom nav */
 function updateRecordingBadge(count) {
   const navBtn = document.querySelector('[data-screen="recordings"]');
   if (!navBtn) return;
   let badge = navBtn.querySelector('.nav-badge');
   if (count === undefined) {
-    getAllRecordings().then(recs => {
-      updateRecordingBadge(recs.length);
-    }).catch(() => {});
+    getAllRecordings().then(recs => updateRecordingBadge(recs.length)).catch(() => {});
     return;
   }
   if (count > 0) {
     if (!badge) {
       badge = document.createElement('span');
       badge.className = 'nav-badge';
+      badge.style.cssText = 'position:absolute;top:2px;right:8px;background:var(--accent-red);color:#fff;font-size:.6rem;padding:1px 5px;border-radius:10px;font-weight:700;';
+      navBtn.style.position = 'relative';
       navBtn.appendChild(badge);
     }
     badge.textContent = count;
@@ -424,22 +504,14 @@ function updateRecordingBadge(count) {
   }
 }
 
-/** Live elapsed timer on Audio/Video recording status labels */
-function startLiveTimer() {
-  const audioStatus = document.getElementById('audio-rec-status');
-  const videoStatus = document.getElementById('video-rec-status');
-  timerInterval = setInterval(() => {
-    if (!recordingStart) return;
-    const elapsed = Math.round((Date.now() - recordingStart) / 1000);
-    const txt = `● ${fmtDuration(elapsed)}`;
-    if (audioStatus) audioStatus.textContent = txt;
-    if (videoStatus) videoStatus.textContent = txt;
-  }, 1000);
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
 }
 
 /* ══════════════════════════════════════════
    LEGACY COMPAT EXPORTS
-   Other modules may import these names
    ══════════════════════════════════════════ */
 export { startRecording as startAudioRecording };
 export { startRecording as startVideoRecording };
