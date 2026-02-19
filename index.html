@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#0B0F1A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SafeHer" />
+  <meta name="description" content="SafeHer — Women's Personal Safety App" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.svg" />
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <title>SafeHer</title>
+</head>
+<body>
+
+  <!-- ═══════════════ APP HEADER ═══════════════ -->
+  <header id="app-header">
+    <div class="header-left">
+      <svg class="header-logo" width="28" height="28" viewBox="0 0 192 192" fill="none">
+        <path d="M96 28 L150 54 V98 C150 140 96 168 96 168 S42 140 42 98 V54 Z" fill="var(--accent-red)"/>
+        <path d="M96 120 C82 108 66 96 66 82 C66 72 74 66 82 66 C88 66 93 70 96 75 C99 70 104 66 110 66 C118 66 126 72 126 82 C126 96 110 108 96 120Z" fill="var(--text-primary)"/>
+      </svg>
+      <span class="header-title">SafeHer</span>
+    </div>
+    <div class="header-right">
+      <div id="status-indicator" class="status-badge status-safe">
+        <span class="status-dot"></span>
+        <span class="status-text">Safe</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════ SCREEN: HOME ═══════════════ -->
+  <main id="screen-home" class="screen active">
+    <!-- Status Card -->
+    <section class="status-card" id="home-status-card">
+      <div class="status-card-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2">
+          <path d="M12 2 L20 6 V12 C20 17 12 22 12 22 S4 17 4 12 V6 Z"/>
+          <path d="M9 12 L11 14 L15 10"/>
+        </svg>
+      </div>
+      <div class="status-card-content">
+        <h2 id="status-card-title">You're Safe</h2>
+        <p id="status-card-sub">All systems normal. Stay alert, stay safe.</p>
+      </div>
+    </section>
+
+    <!-- SOS Button -->
+    <section class="sos-section">
+      <p class="sos-label">Hold for 3 seconds to trigger SOS</p>
+      <div class="sos-ring">
+        <div class="sos-ring-pulse"></div>
+        <button id="btn-sos" class="sos-button" aria-label="Emergency SOS — hold for 3 seconds">
+          <span class="sos-text">SOS</span>
+        </button>
+      </div>
+      <p class="sos-sublabel">Emergency alert will be sent to your contacts</p>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="quick-actions">
+      <h3 class="section-title">Quick Actions</h3>
+      <div class="quick-actions-grid">
+        <button id="btn-fake-call" class="action-card" data-action="fake-call">
+          <div class="action-icon action-icon--blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </div>
+          <span>Fake Call</span>
+        </button>
+        <button id="btn-quick-record" class="action-card" data-action="record">
+          <div class="action-icon action-icon--red">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </div>
+          <span>Record</span>
+        </button>
+        <button id="btn-share-location" class="action-card" data-action="share-location">
+          <div class="action-icon action-icon--green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <span>Share Location</span>
+        </button>
+        <button id="btn-quick-siren" class="action-card" data-action="siren">
+          <div class="action-icon action-icon--amber">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              <line x1="12" y1="2" x2="12" y2="4"/>
+            </svg>
+          </div>
+          <span>Siren</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Safety Features -->
+    <section class="features-section">
+      <h3 class="section-title">Safety Features</h3>
+      <!-- Safe Mode -->
+      <div class="feature-card" id="feature-safe-mode">
+        <div class="feature-info">
+          <div class="feature-icon feature-icon--green">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2 L20 6 V12 C20 17 12 22 12 22 S4 17 4 12 V6 Z"/>
+              <path d="M9 12 L11 14 L15 10"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Safe Mode</h4>
+            <p id="safe-mode-status">Off — Set a check-in timer</p>
+          </div>
+        </div>
+        <label class="toggle" for="toggle-safe-mode">
+          <input type="checkbox" id="toggle-safe-mode" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <!-- Safe Mode Timer Picker (hidden by default) -->
+      <div id="safe-mode-options" class="feature-options hidden">
+        <p class="feature-options-label">Check-in every:</p>
+        <div class="timer-buttons">
+          <button class="timer-btn" data-minutes="15">15 min</button>
+          <button class="timer-btn" data-minutes="30">30 min</button>
+          <button class="timer-btn active" data-minutes="60">60 min</button>
+        </div>
+        <div id="safe-mode-timer-display" class="timer-display hidden">
+          <span id="safe-mode-countdown">60:00</span>
+          <button id="btn-checkin" class="btn btn--green btn--sm">I'm Safe ✓</button>
+        </div>
+      </div>
+
+      <!-- Motion Detection -->
+      <div class="feature-card" id="feature-motion">
+        <div class="feature-info">
+          <div class="feature-icon feature-icon--amber">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 12 L6 8 L10 12 L14 4 L18 12 L22 8"/>
+              <line x1="2" y1="20" x2="22" y2="20"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Shake Detection</h4>
+            <p id="motion-status">Off — Detects violent shaking</p>
+          </div>
+        </div>
+        <label class="toggle" for="toggle-motion">
+          <input type="checkbox" id="toggle-motion" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- Voice Detection -->
+      <div class="feature-card" id="feature-voice">
+        <div class="feature-info">
+          <div class="feature-icon feature-icon--blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Voice Detection</h4>
+            <p id="voice-status">Off — Listens for distress words</p>
+          </div>
+        </div>
+        <label class="toggle" for="toggle-voice">
+          <input type="checkbox" id="toggle-voice" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══════════════ SCREEN: JOURNEY ═══════════════ -->
+  <main id="screen-journey" class="screen">
+    <section class="journey-header-card">
+      <h3>Live Journey</h3>
+      <p id="journey-info-text">Track your path in real-time and share with contacts.</p>
+    </section>
+    <div id="map-container"></div>
+    <div class="journey-controls">
+      <div class="journey-stats" id="journey-stats">
+        <div class="stat-item">
+          <span class="stat-value" id="journey-duration">00:00</span>
+          <span class="stat-label">Duration</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="journey-distance">0.0 km</span>
+          <span class="stat-label">Distance</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="journey-speed">0 km/h</span>
+          <span class="stat-label">Speed</span>
+        </div>
+      </div>
+      <div class="journey-buttons">
+        <button id="btn-start-journey" class="btn btn--green btn--lg">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Start Journey
+        </button>
+        <button id="btn-stop-journey" class="btn btn--red btn--lg hidden">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          Stop Journey
+        </button>
+        <button id="btn-share-journey" class="btn btn--blue btn--sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share Location
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════════ SCREEN: CONTACTS ═══════════════ -->
+  <main id="screen-contacts" class="screen">
+    <section class="contacts-header">
+      <h3>Emergency Contacts</h3>
+      <p>These people will be alerted during an SOS.</p>
+    </section>
+    <!-- Add Contact Form -->
+    <section class="contact-form-card" id="contact-form-card">
+      <h4 id="contact-form-title">Add Contact</h4>
+      <form id="contact-form" autocomplete="off">
+        <input type="hidden" id="contact-edit-id" value="" />
+        <div class="form-group">
+          <label for="contact-name">Name</label>
+          <input type="text" id="contact-name" placeholder="e.g. Mom" required />
+        </div>
+        <div class="form-group">
+          <label for="contact-phone">Phone Number</label>
+          <input type="tel" id="contact-phone" placeholder="+91 98765 43210" required />
+        </div>
+        <div class="form-group">
+          <label for="contact-relation">Relationship</label>
+          <select id="contact-relation">
+            <option value="Family">Family</option>
+            <option value="Friend">Friend</option>
+            <option value="Partner">Partner</option>
+            <option value="Colleague">Colleague</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn--green btn--sm" id="btn-save-contact">Save Contact</button>
+          <button type="button" class="btn btn--ghost btn--sm" id="btn-cancel-contact">Cancel</button>
+        </div>
+      </form>
+    </section>
+    <!-- Contact List -->
+    <section id="contacts-list" class="contacts-list">
+      <div class="empty-state" id="contacts-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <p>No emergency contacts yet.</p>
+        <p class="small">Add people you trust to receive your SOS alerts.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══════════════ SCREEN: RECORDINGS ═══════════════ -->
+  <main id="screen-recordings" class="screen">
+    <section class="recordings-header">
+      <h3>Evidence Recorder</h3>
+      <p>Record audio or video evidence. Stored securely on your device.</p>
+    </section>
+    <section class="recorder-controls">
+      <button id="btn-record-audio" class="record-btn record-btn--audio">
+        <div class="record-btn-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+          </svg>
+        </div>
+        <span>Record Audio</span>
+        <span class="record-btn-sub" id="audio-rec-status">Tap to start</span>
+      </button>
+      <button id="btn-record-video" class="record-btn record-btn--video">
+        <div class="record-btn-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="23 7 16 12 23 17 23 7"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+        </div>
+        <span>Record Video</span>
+        <span class="record-btn-sub" id="video-rec-status">Tap to start</span>
+      </button>
+    </section>
+    <section class="recordings-list-section">
+      <h4>Saved Recordings</h4>
+      <div id="recordings-list" class="recordings-list">
+        <div class="empty-state" id="recordings-empty">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          <p>No recordings yet.</p>
+          <p class="small">Recordings are stored locally on your device.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══════════════ BOTTOM NAVIGATION ═══════════════ -->
+  <nav id="bottom-nav">
+    <button class="nav-btn active" data-screen="home" aria-label="Home">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2 L20 6 V12 C20 17 12 22 12 22 S4 17 4 12 V6 Z"/>
+      </svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-btn" data-screen="journey" aria-label="Journey">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+        <circle cx="12" cy="10" r="3"/>
+      </svg>
+      <span>Journey</span>
+    </button>
+    <button class="nav-btn" data-screen="contacts" aria-label="Contacts">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <span>Contacts</span>
+    </button>
+    <button class="nav-btn" data-screen="recordings" aria-label="Recordings">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+      <span>Record</span>
+    </button>
+  </nav>
+
+  <!-- ═══════════════ OVERLAYS ═══════════════ -->
+
+  <!-- Emergency Alert Overlay -->
+  <div id="alert-overlay" class="overlay hidden">
+    <div class="overlay-content alert-content">
+      <div class="alert-icon-ring">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h2>🚨 EMERGENCY ALERT</h2>
+      <p id="alert-overlay-msg">Sending your location and alert to emergency contacts…</p>
+      <div class="alert-actions">
+        <button id="btn-stop-alert" class="btn btn--white btn--lg">I'm Safe — Cancel Alert</button>
+        <button id="btn-call-police" class="btn btn--ghost-white btn--sm">Call Police (100)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fake Call Overlay -->
+  <div id="fake-call-overlay" class="overlay hidden">
+    <div class="overlay-content fake-call-content">
+      <div class="fake-call-bg"></div>
+      <div class="fake-call-info">
+        <div class="fake-call-avatar">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <p class="fake-call-label">Incoming Call</p>
+        <h2 class="fake-call-name" id="fake-call-name">Mom ❤️</h2>
+        <p class="fake-call-number" id="fake-call-number">Mobile</p>
+      </div>
+      <div class="fake-call-actions">
+        <button id="btn-decline-call" class="call-action-btn call-action-btn--decline" aria-label="Decline">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </button>
+        <button id="btn-accept-call" class="call-action-btn call-action-btn--accept" aria-label="Accept">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOS Countdown Overlay -->
+  <div id="countdown-overlay" class="overlay hidden">
+    <div class="overlay-content countdown-content">
+      <div class="countdown-ring">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="70" fill="none" stroke="var(--border-color)" stroke-width="6"/>
+          <circle id="countdown-circle" cx="80" cy="80" r="70" fill="none" stroke="var(--accent-red)" stroke-width="6" stroke-linecap="round"
+            stroke-dasharray="439.82" stroke-dashoffset="0" transform="rotate(-90 80 80)"/>
+        </svg>
+        <span id="countdown-number" class="countdown-number">5</span>
+      </div>
+      <h2>Sending SOS Alert…</h2>
+      <p>Tap below to cancel</p>
+      <button id="btn-cancel-countdown" class="btn btn--white btn--lg">Cancel — I'm Safe</button>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div id="toast-container"></div>
+
+  <!-- ═══════════════ SCRIPTS ═══════════════ -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
