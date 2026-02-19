@@ -70,29 +70,30 @@ document.addEventListener('DOMContentLoaded', () => {
    SCREEN NAVIGATION
    ══════════════════════════════════════════ */
 function initNavigation() {
-  const btns = document.querySelectorAll('.nav-btn');
+  const btns    = document.querySelectorAll('.nav-btn');
   const screens = document.querySelectorAll('.screen');
 
   btns.forEach(btn => {
     btn.addEventListener('click', () => {
       const target = btn.dataset.screen;
 
-      // Update nav buttons
+      /* ── Update nav button highlight ── */
       btns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
-      // Show target screen, hide others (use active class, remove hidden)
+      /* ── Switch screens: remove hidden + toggle active ── */
       screens.forEach(s => {
+        s.classList.remove('hidden');          // never let hidden stick
         if (s.id === `screen-${target}`) {
           s.classList.add('active');
-          s.classList.remove('hidden');
+          s.style.display = 'block';          // belt-and-suspenders
         } else {
           s.classList.remove('active');
-          s.classList.remove('hidden');
+          s.style.display = '';                // revert to CSS rule
         }
       });
 
-      // Lazy inits per tab
+      /* ── Per-tab lazy init / refresh ── */
       if (target === 'journey') {
         setTimeout(() => { initMap(); refreshMap(); }, 150);
       }

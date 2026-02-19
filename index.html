@@ -248,6 +248,10 @@
           <input type="tel" id="contact-phone" placeholder="+91 98765 43210" required />
         </div>
         <div class="form-group">
+          <label for="contact-email">Email (optional)</label>
+          <input type="email" id="contact-email" placeholder="example@email.com" />
+        </div>
+        <div class="form-group">
           <label for="contact-relation">Relationship</label>
           <select id="contact-relation">
             <option value="Family">Family</option>
@@ -263,6 +267,30 @@
         </div>
       </form>
     </section>
+    <!-- Send Location Section -->
+    <section class="send-location-card" id="send-location-card">
+      <h4>📍 Send My Location</h4>
+      <p class="send-location-desc">Send your current location with a custom message to all saved contacts via SMS or Email.</p>
+      <div class="form-group">
+        <label for="custom-message">Custom Message (optional)</label>
+        <textarea id="custom-message" rows="3" placeholder="I'm heading home now. Here's my live location..."></textarea>
+      </div>
+      <div class="send-actions">
+        <button id="btn-send-sms" class="btn btn--green btn--sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Send via SMS
+        </button>
+        <button id="btn-send-email" class="btn btn--blue btn--sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Send via Email
+        </button>
+        <button id="btn-send-share" class="btn btn--amber btn--sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share
+        </button>
+      </div>
+    </section>
+
     <!-- Contact List -->
     <section id="contacts-list" class="contacts-list">
       <div class="empty-state" id="contacts-empty">

@@ -605,6 +605,45 @@ body {
   color: var(--accent-red);
 }
 
+/* Send Location Card */
+.send-location-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.send-location-card h4 {
+  font-size: 0.95rem; font-weight: 600; margin-bottom: 6px;
+}
+.send-location-desc {
+  font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;
+}
+.send-location-card textarea {
+  width: 100%; padding: 10px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.send-location-card textarea::placeholder { color: var(--text-secondary); opacity: 0.6; }
+.send-location-card textarea:focus { border-color: var(--accent-blue); }
+.send-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+}
+.send-actions .btn { flex: 1; min-width: 100px; }
+
+/* Active action card (when recording from Home) */
+.action-card--active {
+  border-color: var(--accent-red);
+  background: var(--accent-red-soft);
+}
+
 /* Empty State */
 .empty-state {
   display: flex; flex-direction: column;
@@ -910,7 +949,9 @@ body {
   #app-header,
   .screen,
   #bottom-nav {
-    /* Already max-width limited and centered */
+    /* max-width limited and centered */
+    margin-left: auto;
+    margin-right: auto;
   }
   .screen {
     border-left: 1px solid var(--border-color);
