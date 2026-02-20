@@ -100,8 +100,9 @@ SafeHer was built as a complete solution — not just an alert button, but a ful
 - Start a journey to track your path in real-time on an interactive map
 - Shows **duration**, **distance** (km), and **speed** (km/h) in real-time
 - Draws your walking/driving path on the map
-- Share your live location with contacts at any time
-- Custom animated user location marker with pulsing ring
+- **Always-on live blue dot** with pulsing animation and GPS accuracy circle
+- Share your live location instantly via **WhatsApp** (deep link — no API key needed)
+- GPS retry logic: tries high accuracy first, falls back to low accuracy with specific error messages
 
 ### 📞 Fake Call
 - Instantly shows a **fake incoming call overlay** (looks like a real phone call)
@@ -119,7 +120,7 @@ SafeHer was built as a complete solution — not just an alert button, but a ful
 - Add, edit, and delete emergency contacts
 - Store: **Name**, **Phone**, **Email**, **Relationship** (Family/Friend/Partner/Colleague/Other)
 - Smooth card-based UI with avatars generated from initials
-- Send location manually via **SMS**, **Email**, or **Web Share API**
+- Send location manually via **SMS**, **Email**, or **WhatsApp** (deep link)
 - Custom message support for manual location sharing
 
 ### 🔔 Smart Alert System
@@ -159,11 +160,12 @@ SafeHer was built as a complete solution — not just an alert button, but a ful
 | **MediaRecorder API** | Audio & video evidence recording |
 | **ImageCapture API** | Camera snapshot without stopping video |
 | **Web Audio API** | Siren sound generation (no audio files) |
-| **Geolocation API** | Real-time GPS location tracking |
+| **Geolocation API** | Real-time GPS via `watchPosition` (faster than `getCurrentPosition`) |
 | **IndexedDB** | Local storage for recorded evidence |
 | **Service Worker** | Offline support, cache management |
 | **Web App Manifest** | PWA installability, home screen icon |
-| **Telegraph/freeimage.host** | Free image upload for email snapshots |
+| **Telegraph/freeimage.host/tmpfiles.org** | Free image upload for email snapshots (3-host fallback chain) |
+| **WhatsApp Deep Link** | Location sharing via `wa.me` URL (no API key needed) |
 | **Google Fonts (Outfit)** | Modern typography |
 
 ---
@@ -180,7 +182,7 @@ SafeHer/
 ├── README.md               # Project documentation (this file)
 │
 ├── css/
-│   └── style.css           # Complete dark theme UI (994 lines)
+│   └── style.css           # Complete dark theme UI (995+ lines, includes live dot animation)
 │
 ├── js/
 │   ├── app.js              # Entry point — AppState, navigation, module init
@@ -280,11 +282,12 @@ SafeHer/
 
 ### Step 11: Live Journey Tracking
 - Integrated **Leaflet.js** with OpenStreetMap tiles
-- Real-time GPS tracking with animated user marker
+- **Always-on live blue dot** using `watchPosition` with pulsing CSS animation and accuracy circle
 - Journey path drawn as polyline on the map
 - Live stats: duration (mm:ss), distance (km), speed (km/h)
 - Start/stop journey controls
-- Share current location via Web Share API
+- Share location via **WhatsApp deep link** (`https://wa.me/?text=...`) — replaced Web Share API for better mobile compatibility
+- GPS retry logic: high accuracy first → low accuracy fallback with user-friendly error messages per error code
 
 ### Step 12: Real-Time Live Location Updates
 - After SOS trigger, sends **GPS location update email every 2 minutes**
@@ -298,7 +301,15 @@ SafeHer/
 - All local assets and CDN resources cached on install
 - Automatic old cache cleanup on activation
 - Offline fallback to cached `index.html` for navigation requests
-- Cache versioning (`safeher-v16`) ensures updates propagate to users
+- Cache versioning (`safeher-v20`) ensures updates propagate to users
+
+### Step 14: GPS Reliability & Fallback Improvements
+- Replaced `getCurrentPosition` with **`watchPosition`** in emergency alerts — fires significantly faster on mobile devices
+- Increased GPS timeout from 5s to **20 seconds** with `maximumAge: 60000` (accepts 1-minute-old cached positions)
+- If GPS fails completely in contacts.js, a **secondary `watchPosition`** retries with 15s timeout
+- **Broken URL fix**: If location is unavailable, email links now fall back to `https://www.google.com/maps` (valid generic link) instead of the literal string `"Location unavailable"` which produced broken navigation links
+- Reverse geocoding switched to **URL parameters only** (removed custom `Accept-Language` header that caused CORS failures on mobile)
+- Address built from Nominatim response parts: road → suburb → city/town → state → postcode
 
 ---
 
