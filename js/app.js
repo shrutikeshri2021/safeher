@@ -12,6 +12,8 @@ import { initContactsUI } from './contacts.js';
 import * as recorder from './recorder.js';
 import { initMap, shareLocation, refreshMap } from './mapJourney.js';
 import { showToast, showFakeCall, hideFakeCall } from './alerts.js';
+import * as history from './history.js';
+import { logEvent } from './historyLogger.js';
 
 /* ══════════════════════════════════════════
    SHARED APP STATE
@@ -44,6 +46,10 @@ document.addEventListener('DOMContentLoaded', () => {
   sosButton.init();
   initContactsUI();
   recorder.init();
+  history.init();
+
+  /* ── Log app opened (once per session) ── */
+  logEvent('app_opened').catch(() => {});
 
   /* ── Quick actions ── */
   wireQuickActions();
@@ -103,6 +109,9 @@ function initNavigation() {
       if (target === 'recordings') {
         recorder.renderRecordings();
       }
+      if (target === 'history') {
+        history.refreshHistory();
+      }
     });
   });
 }
@@ -149,10 +158,7 @@ function wireQuickActions() {
    JOURNEY BUTTONS
    ══════════════════════════════════════════ */
 function wireJourney() {
-  // Journey start / stop buttons are wired inside mapJourney.initMap()
-  // Here we only wire the share button on the journey screen
-  const shareBtn = document.getElementById('btn-share-journey');
-  if (shareBtn) shareBtn.addEventListener('click', () => shareLocation());
+  // All journey buttons are wired inside mapJourney.initMap()
 }
 
 /* ══════════════════════════════════════════

@@ -6,6 +6,7 @@
 import { showToast, updateHeaderStatus, updateStatusCard } from './alerts.js';
 import * as motionDetect from './motionDetect.js';
 import * as voiceDetect from './voiceDetect.js';
+import { logEvent } from './historyLogger.js';
 
 /* ──── Global ref (set by app.js init) ──── */
 let AppState = null;
@@ -64,6 +65,8 @@ function enableSafeMode(silent = false) {
   updateStatusCard('safe', "You're Safe 🏠", 'All sensors are paused. Toggle off when you head out.');
 
   if (!silent) showToast('Safe Mode ON — All sensors paused', 'success');
+
+  if (!silent) logEvent('safe_mode_on').catch(() => {});
 }
 
 /* ══════════════════════════════════════════
@@ -89,6 +92,8 @@ function disableSafeMode(silent = false) {
   updateStatusCard('watching', 'Stay Alert 🚶‍♀️', 'Motion & voice detection active. Stay safe!');
 
   if (!silent) showToast('Stay Alert — All sensors active', 'warning');
+
+  if (!silent) logEvent('safe_mode_off').catch(() => {});
 }
 
 /* ── Geolocation helper ────────────────── */

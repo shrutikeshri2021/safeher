@@ -6,6 +6,7 @@
 
 import { showToast, sendAlert, updateHeaderStatus, updateStatusCard } from './alerts.js';
 import { startEmergencyRecording, stopRecording } from './recorder.js';
+import { logEvent } from './historyLogger.js';
 
 /* ──── Global ref (set by app.js) ──── */
 let AppState = null;
@@ -119,4 +120,6 @@ async function triggerMotionAlert() {
   sendAlert('motion');
 
   showToast('⚠️ Motion detected — Recording started', 'warning');
+
+  logEvent('motion_alert', { trigger: { method: 'shake_detection' } }).catch(() => {});
 }

@@ -5,6 +5,7 @@
    ═══════════════════════════════════════════════ */
 
 import { showToast } from './alerts.js';
+import { logEvent } from './historyLogger.js';
 
 const STORAGE_KEY = 'safeher_contacts';
 
@@ -623,6 +624,9 @@ export async function sendAlertToContacts(location) {
 
     if (emailsSent > 0) {
       showToast(`✅ Alert auto-sent to ${emailsSent} contact${emailsSent > 1 ? 's' : ''}!`, 'success');
+      logEvent('contact_alerted', {
+        contacts: { alerted: true, alertedCount: emailsSent, contactNames: emailContacts.map(c => c.name).join(', ') }
+      }).catch(() => {});
     }
     if (emailsFailed > 0) {
       showToast(`⚠️ ${emailsFailed} alert${emailsFailed > 1 ? 's' : ''} failed`, 'warning');

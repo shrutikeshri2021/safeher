@@ -6,6 +6,7 @@
    ═══════════════════════════════════════════════ */
 
 import { showToast } from './alerts.js';
+import { logEvent } from './historyLogger.js';
 
 /* ──── Global ref (injected by app.js) ──── */
 let AppState = null;
@@ -13,7 +14,7 @@ export function setAppState(state) { AppState = state; }
 
 /* ──── IndexedDB constants ──── */
 const DB_NAME    = 'SafeHerDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'recordings';
 
 /* ──── Module state ──── */
@@ -51,6 +52,12 @@ function openDB() {
       const database = e.target.result;
       if (!database.objectStoreNames.contains(STORE_NAME)) {
         database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      }
+      if (!database.objectStoreNames.contains('history')) {
+        const store = database.createObjectStore('history', { keyPath: 'id' });
+        store.createIndex('by_timestamp', 'timestamp', { unique: false });
+        store.createIndex('by_type',      'type',      { unique: false });
+        store.createIndex('by_severity',  'severity',  { unique: false });
       }
     };
     req.onsuccess = (e) => { db = e.target.result; resolve(db); };
@@ -146,6 +153,10 @@ export async function startRecording(type = 'manual') {
       if (!db) db = await openDB();
       await saveRecord(record);
       showToast(`📹 ${fname} saved to device`, 'success');
+      logEvent('recording_saved', {
+        media: { hasVideo: hasVideo, hasAudio: true, videoDuration: duration },
+        trigger: { method: currentType || 'manual' }
+      }).catch(() => {});
     } catch (err) {
       showToast('Could not save recording', 'error');
     }

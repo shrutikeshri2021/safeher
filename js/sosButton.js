@@ -12,6 +12,7 @@ import {
 } from './alerts.js';
 import { startEmergencyRecording, stopRecording } from './recorder.js';
 import { stopLiveLocationUpdates } from './contacts.js';
+import { logEvent } from './historyLogger.js';
 
 /* ──── Global ref (set by app.js) ──── */
 let AppState = null;
@@ -115,6 +116,8 @@ export function activateSOS() {
   sendEmergencyAlert('sos');
 
   showToast('🚨 SOS Activated — Alerting contacts!', 'error');
+
+  logEvent('sos_triggered', { trigger: { method: 'hold_button' } }).catch(() => {});
 }
 
 /* ══════════════════════════════════════════
@@ -160,6 +163,8 @@ export function deactivateSOS() {
   }
 
   showToast('SOS Cancelled — Stay safe 💚', 'success');
+
+  logEvent('sos_cancelled').catch(() => {});
 }
 
 /* ══════════════════════════════════════════
@@ -168,4 +173,5 @@ export function deactivateSOS() {
    ══════════════════════════════════════════ */
 export function activateFakeCall() {
   showFakeCall();
+  logEvent('fake_call_used').catch(() => {});
 }

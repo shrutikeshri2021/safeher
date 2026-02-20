@@ -9,6 +9,7 @@ import {
   sendEmergencyAlert, updateHeaderStatus, updateStatusCard
 } from './alerts.js';
 import { startRecording } from './recorder.js';
+import { logEvent } from './historyLogger.js';
 
 /* ──── Global ref (injected by app.js) ──── */
 let AppState = null;
@@ -182,6 +183,8 @@ async function activateFullEmergency(source) {
   if (navigator.vibrate) navigator.vibrate([1000, 500, 1000]);
 
   showToast('🚨 Emergency activated — alerting contacts', 'error');
+
+  logEvent('voice_alert', { trigger: { method: 'voice_keyword', keyword: source } }).catch(() => {});
 }
 
 /* ══════════════════════════════════════════

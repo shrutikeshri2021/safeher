@@ -1,7 +1,7 @@
 /* ───────────────────────────────────────────────
    SafeHer – Service Worker (Cache-first + offline)
    ─────────────────────────────────────────────── */
-const CACHE_NAME = 'safeher-v25';
+const CACHE_NAME = 'safeher-v27';
 const LOCAL_ASSETS = [
   '/',
   '/index.html',
@@ -15,6 +15,9 @@ const LOCAL_ASSETS = [
   '/js/motionDetect.js',
   '/js/voiceDetect.js',
   '/js/mapJourney.js',
+  '/js/db.js',
+  '/js/historyLogger.js',
+  '/js/history.js',
   '/manifest.json',
   '/assets/icons/icon-192.svg',
   '/assets/icons/icon-512.svg'
