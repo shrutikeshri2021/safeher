@@ -420,14 +420,33 @@ export function triggerEmergency(location) {
   document.dispatchEvent(new CustomEvent('safeher:emergency', { detail: { location } }));
 }
 
-/* ── Helper: current GPS ──────────────────────── */
+/* ── Helper: current GPS (with retry and fallback) ── */
 function getCurrentLocation() {
   return new Promise((resolve) => {
     if (!navigator.geolocation) { resolve(null); return; }
+
+    // Attempt 1: High accuracy, 10s timeout, allow 30s cached
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      (pos) => {
+        console.log('📍 GPS obtained (high accuracy)');
+        resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      () => {
+        console.warn('📍 High accuracy GPS failed, retrying with low accuracy...');
+        // Attempt 2: Low accuracy, 15s timeout, allow 60s cached
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            console.log('📍 GPS obtained (low accuracy fallback)');
+            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          },
+          (err) => {
+            console.error('📍 All GPS attempts failed:', err?.message);
+            resolve(null);
+          },
+          { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
     );
   });
 }

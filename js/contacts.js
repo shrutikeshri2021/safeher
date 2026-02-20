@@ -407,6 +407,23 @@ async function uploadSnapshot(base64Data) {
 export async function sendAlertToContacts(location) {
   console.log('🚨 sendAlertToContacts CALLED', location);
 
+  // If location is null (GPS timed out in alerts.js), try fetching it here
+  if (!location && navigator.geolocation) {
+    console.log('📍 Location was null, trying to get GPS here...');
+    try {
+      location = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          (err) => reject(err),
+          { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+        );
+      });
+      console.log('📍 Got location in contacts.js:', location);
+    } catch (e) {
+      console.warn('📍 Still no location:', e?.message);
+    }
+  }
+
   const contacts = getContacts();
   console.log('📋 Contacts found:', contacts.length, contacts);
 
