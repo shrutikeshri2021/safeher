@@ -255,25 +255,43 @@ export function shareLocation() {
     return;
   }
 
-  showToast('Getting your location…', 'info');
+  showToast('📍 Getting your location…', 'info');
 
+  // Try high accuracy first, then fallback to low accuracy
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const { latitude: lat, longitude: lng } = pos.coords;
-      const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
-      const message = `📍 My current location (SafeHer):\n${mapsLink}\nLat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}\n\n— Sent from SafeHer Safety App`;
-      const encoded = encodeURIComponent(message);
-
-      // Open WhatsApp with pre-filled message
-      const whatsappUrl = `https://wa.me/?text=${encoded}`;
-      window.open(whatsappUrl, '_blank');
-      showToast('Opening WhatsApp…', 'success');
-    },
+    (pos) => openWhatsAppWithLocation(pos),
     () => {
-      showToast('Could not get location. Enable GPS.', 'error');
+      // Retry with lower accuracy and longer timeout
+      console.log('📍 High accuracy failed, retrying with low accuracy…');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => openWhatsAppWithLocation(pos),
+        (err) => {
+          console.error('📍 Location failed:', err.code, err.message);
+          if (err.code === 1) {
+            showToast('Location permission denied — tap the 🔒 icon in your browser address bar and allow Location', 'error');
+          } else if (err.code === 2) {
+            showToast('GPS unavailable — make sure Location/GPS is turned ON in your phone settings', 'error');
+          } else {
+            showToast('Location timed out — please go outside or near a window and try again', 'error');
+          }
+        },
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+      );
     },
-    { enableHighAccuracy: true, timeout: 10000 }
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
   );
+}
+
+function openWhatsAppWithLocation(pos) {
+  const { latitude: lat, longitude: lng } = pos.coords;
+  const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
+  const message = `📍 My current location (SafeHer):\n${mapsLink}\nLat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}\n\n— Sent from SafeHer Safety App`;
+  const encoded = encodeURIComponent(message);
+
+  // Open WhatsApp with pre-filled message
+  const whatsappUrl = `https://wa.me/?text=${encoded}`;
+  window.open(whatsappUrl, '_blank');
+  showToast('Opening WhatsApp…', 'success');
 }
 
 /* ── Haversine Distance (km) ──────────────────── */
