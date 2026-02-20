@@ -279,6 +279,42 @@ body {
 .sos-button .sos-text {
   pointer-events: none;
 }
+/* FIX 1: SOS Minimize button (top-right of overlay) */
+.sos-minimize-btn {
+  position: absolute; top: 16px; right: 16px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff; font-size: 0.8rem; font-weight: 600;
+  padding: 6px 14px; border-radius: 20px;
+  cursor: pointer; z-index: 201;
+  font-family: 'Outfit', sans-serif;
+  transition: background 0.2s;
+}
+.sos-minimize-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* FIX 1: SOS Active Pill (fixed at top when overlay minimized) */
+.sos-active-pill {
+  position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+  background: var(--accent-red); color: #fff;
+  padding: 8px 20px; border-radius: 24px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem; font-weight: 700;
+  z-index: 199; cursor: pointer;
+  animation: pillBlink 1.5s ease-in-out infinite;
+  box-shadow: 0 4px 20px rgba(255,45,85,0.4);
+}
+.sos-active-pill.hidden { display: none; }
+@keyframes pillBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+/* FIX 2: SOS button disabled in safe mode */
+.sos-button.sos-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  animation: none;
+}
 
 /* ═══════════════ QUICK ACTIONS ═══════════════ */
 .quick-actions-grid {
@@ -1350,6 +1386,34 @@ body {
 .history-search-input::placeholder { color: var(--text-secondary); }
 .history-search-input:focus { border-color: var(--accent-blue); }
 
+/* FIX 3: History autocomplete dropdown */
+.history-autocomplete {
+  position: absolute; left: 0; right: 0; top: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  max-height: 240px; overflow-y: auto;
+  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.history-autocomplete.hidden { display: none; }
+.history-ac-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  transition: background 0.15s;
+}
+.history-ac-item:hover { background: rgba(10,132,255,0.1); }
+.history-ac-icon { font-size: 1rem; flex-shrink: 0; }
+.history-ac-text { color: var(--text-primary); flex: 1; }
+.history-ac-type {
+  font-size: 0.6rem; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.3px;
+}
+
 /* Filter chips */
 .history-chips {
   display: flex;
@@ -1405,8 +1469,9 @@ body {
 .hist-toolbar-btn:hover { color: var(--text-primary); border-color: var(--accent-blue); }
 .hist-toolbar-btn--danger:hover { color: var(--accent-red); border-color: var(--accent-red); }
 
-/* ── Date Headers ── */
+/* ── Date Headers (sticky, ChatGPT-style grouping) ── */
 .hist-date-header {
+  position: sticky; top: 0;
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-secondary);
@@ -1415,6 +1480,8 @@ body {
   padding: 12px 0 6px;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 8px;
+  background: var(--bg-primary);
+  z-index: 5;
 }
 
 /* ── Event Cards ── */

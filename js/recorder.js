@@ -71,13 +71,37 @@ function openDB() {
    No auto-stop timer.
    ══════════════════════════════════════════ */
 export async function startRecording(type = 'manual') {
-  if (mediaRecorder && mediaRecorder.state === 'recording') return;
+  // FIX 4: Guard — same type already recording, do nothing
+  if (mediaRecorder && mediaRecorder.state === 'recording' && currentType === type) return;
+
+  // FIX 4: Stop any active recording before starting a different type
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    await stopRecordingAsync();
+  }
+
+  // FIX 4: Clean up any lingering stream
+  if (currentStream) {
+    currentStream.getTracks().forEach(t => t.stop());
+    currentStream = null;
+  }
 
   // SOS / emergency / video → record video; else audio only
   const wantVideo = (type === 'video' || type === 'sos' || type === 'motion' || type === 'voice' || type === 'manual');
 
   try {
-    if (wantVideo) {
+    if (type === 'audio') {
+      // FIX 4: Audio-only stream (no video)
+      currentStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true },
+        video: false
+      });
+    } else if (type === 'video') {
+      // FIX 5: Video with audio, back camera
+      currentStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+        audio: true
+      });
+    } else if (wantVideo) {
       // Use BACK camera (environment) for SOS/emergency, front for manual video
       const useBackCamera = (type === 'sos' || type === 'motion' || type === 'voice');
       const videoConstraints = useBackCamera
@@ -102,7 +126,8 @@ export async function startRecording(type = 'manual') {
         } catch (_) { /* torch not supported — that's fine */ }
       }
     } else {
-      currentStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } });
+      // Audio-only fallback for unknown types
+      currentStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true }, video: false });
     }
   } catch (_) {
     // If video fails, fallback to audio
@@ -211,6 +236,21 @@ export function stopRecording() {
   if (AppState) AppState.isRecording = false;
 }
 
+/* FIX 4: stopRecordingAsync — waits for onstop handler to complete before resolving */
+function stopRecordingAsync() {
+  return new Promise(resolve => {
+    if (!mediaRecorder || mediaRecorder.state !== 'recording') { resolve(); return; }
+    const origOnstop = mediaRecorder.onstop;
+    mediaRecorder.onstop = async function (...args) {
+      if (origOnstop) await origOnstop.apply(this, args);
+      resolve();
+    };
+    mediaRecorder.stop();
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    if (autoStopTimer) { clearTimeout(autoStopTimer); autoStopTimer = null; }
+  });
+}
+
 /* ══════════════════════════════════════════
    getAllRecordings()  — newest first
    ══════════════════════════════════════════ */
@@ -315,7 +355,8 @@ function wireRecorderUI() {
 
   if (audioBtn) {
     audioBtn.addEventListener('click', async () => {
-      if (isRecording()) {
+      // FIX 4: Toggle independently — audio button controls audio only
+      if (isRecording() && currentType === 'audio') {
         stopRecording();
       } else {
         await startRecording('audio');
@@ -325,7 +366,8 @@ function wireRecorderUI() {
 
   if (videoBtn) {
     videoBtn.addEventListener('click', async () => {
-      if (isRecording()) {
+      // FIX 4: Toggle independently — video button controls video only
+      if (isRecording() && currentType === 'video') {
         stopRecording();
       } else {
         await startRecording('video');
@@ -447,10 +489,14 @@ function showRecordingUI() {
   const audioSt  = document.getElementById('audio-rec-status');
   const videoSt  = document.getElementById('video-rec-status');
 
-  if (audioBtn) audioBtn.classList.add('recording');
-  if (videoBtn) videoBtn.classList.add('recording');
-  if (audioSt) audioSt.textContent = '● Recording…';
-  if (videoSt) videoSt.textContent = '● Recording…';
+  // FIX 4: Only mark the button of the active recording type
+  if (currentMediaType === 'audio') {
+    if (audioBtn) audioBtn.classList.add('recording');
+    if (audioSt) audioSt.textContent = '● Recording…';
+  } else {
+    if (videoBtn) videoBtn.classList.add('recording');
+    if (videoSt) videoSt.textContent = '● Recording…';
+  }
 
   // Quick action card
   const card = document.getElementById('btn-quick-record');
@@ -486,12 +532,17 @@ function startLiveTimer() {
   if (timerInterval) clearInterval(timerInterval);
   const audioSt = document.getElementById('audio-rec-status');
   const videoSt = document.getElementById('video-rec-status');
+  const activeType = currentMediaType; // capture at start
   timerInterval = setInterval(() => {
     if (!recordingStart) return;
     const elapsed = Math.round((Date.now() - recordingStart) / 1000);
     const txt = `● ${fmtDuration(elapsed)}`;
-    if (audioSt) audioSt.textContent = txt;
-    if (videoSt) videoSt.textContent = txt;
+    // FIX 4: Only update the active recording type's status
+    if (activeType === 'audio') {
+      if (audioSt) audioSt.textContent = txt;
+    } else {
+      if (videoSt) videoSt.textContent = txt;
+    }
   }, 1000);
 }
 
@@ -510,9 +561,10 @@ function saveRecord(record) {
 function pickMime(stream) {
   const hasVideo = stream.getVideoTracks().length > 0;
   if (hasVideo) {
-    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) return 'video/webm;codecs=vp9,opus';
+    // FIX 5: Prefer vp8,opus for video+audio sync
     if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) return 'video/webm;codecs=vp8,opus';
     if (MediaRecorder.isTypeSupported('video/webm'))                 return 'video/webm';
+    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) return 'video/webm;codecs=vp9,opus';
     return 'video/mp4';
   }
   if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';

@@ -33,6 +33,7 @@ export function init() {
 
   // --- Long-press (2 s) → activate SOS ---
   btn.addEventListener('pointerdown', (e) => {
+    if (AppState && AppState.safeMode) return;            // FIX 2: blocked in safe mode
     if (AppState && AppState.sosActive) return;           // already active — tap handles cancel
     isHolding = false;
     holdTimer = setTimeout(() => {
@@ -45,6 +46,7 @@ export function init() {
 
   // --- Tap / Click while active → deactivate SOS ---
   btn.addEventListener('click', () => {
+    if (AppState && AppState.safeMode) return;              // FIX 2: blocked in safe mode
     if (isHolding) { isHolding = false; return; }          // ignore click at end of hold
     if (!(AppState && AppState.sosActive)) return;          // not active — hold to activate
     deactivateSOS();
@@ -67,6 +69,37 @@ export function init() {
   const declineBtn = document.getElementById('btn-decline-call');
   if (acceptBtn) acceptBtn.addEventListener('click', acceptFakeCall);
   if (declineBtn) declineBtn.addEventListener('click', hideFakeCall);
+
+  // --- FIX 1: Minimize / Reopen SOS overlay ---
+  const minimizeBtn = document.getElementById('btn-minimize-sos');
+  if (minimizeBtn) minimizeBtn.addEventListener('click', minimizeSOS);
+  const sosPill = document.getElementById('sos-active-pill');
+  if (sosPill) sosPill.addEventListener('click', reopenSOS);
+}
+
+/* FIX 1 — Minimize SOS overlay (keep siren/vibration/recording running) */
+function minimizeSOS() {
+  const overlay = document.getElementById('alert-overlay');
+  const pill = document.getElementById('sos-active-pill');
+  if (overlay) overlay.classList.add('hidden');
+  if (pill) pill.classList.remove('hidden');
+}
+function reopenSOS() {
+  const overlay = document.getElementById('alert-overlay');
+  const pill = document.getElementById('sos-active-pill');
+  if (overlay) overlay.classList.remove('hidden');
+  if (pill) pill.classList.add('hidden');
+}
+
+/* FIX 2 — Update SOS button disabled visual state */
+export function updateSOSDisabledState(disabled) {
+  const btn = document.getElementById('btn-sos');
+  const pulse = document.querySelector('.sos-ring-pulse');
+  if (btn) {
+    if (disabled) btn.classList.add('sos-disabled');
+    else btn.classList.remove('sos-disabled');
+  }
+  if (pulse) pulse.style.animationPlayState = disabled ? 'paused' : 'running';
 }
 
 /* ══════════════════════════════════════════
@@ -142,8 +175,10 @@ export function deactivateSOS() {
   // --- Stop recording ---
   stopRecording();
 
-  // --- Hide overlay ---
+  // --- Hide overlay + pill ---
   hideAlertOverlay();
+  const pill = document.getElementById('sos-active-pill');
+  if (pill) pill.classList.add('hidden');
 
   // --- Reset SOS button ---
   const btn = document.getElementById('btn-sos');

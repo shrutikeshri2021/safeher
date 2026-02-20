@@ -426,7 +426,8 @@
     <section class="history-controls">
       <div class="history-search-wrap">
         <svg class="history-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="history-search" placeholder="Search events…" class="history-search-input" />
+        <input type="text" id="history-search" placeholder="Search events…" class="history-search-input" autocomplete="off" />
+        <div id="history-autocomplete" class="history-autocomplete hidden"></div>
       </div>
       <div id="history-filter-chips" class="history-chips">
         <button class="hist-chip active" data-filter="all">All</button>
@@ -500,8 +501,12 @@
 
   <!-- ═══════════════ OVERLAYS ═══════════════ -->
 
+  <!-- SOS Active Pill (visible when overlay minimized) -->
+  <div id="sos-active-pill" class="sos-active-pill hidden">🔴 SOS ACTIVE</div>
+
   <!-- Emergency Alert Overlay -->
   <div id="alert-overlay" class="overlay hidden">
+    <button id="btn-minimize-sos" class="sos-minimize-btn" type="button">✕ Minimize</button>
     <div class="overlay-content alert-content">
       <div class="alert-icon-ring">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">

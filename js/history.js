@@ -89,14 +89,25 @@ function applyFilters() {
     list = list.filter(e => e.severity === currentFilter);
   }
 
-  /* Text search */
+  /* Text search — matches title, type, address, date groups, coordinates */
   if (currentSearch.trim()) {
     const q = currentSearch.toLowerCase();
-    list = list.filter(e =>
-      (e.title || '').toLowerCase().includes(q) ||
-      (e.type || '').toLowerCase().includes(q) ||
-      (e.location?.address || '').toLowerCase().includes(q)
-    );
+    list = list.filter(e => {
+      if ((e.title || '').toLowerCase().includes(q)) return true;
+      if ((e.type || '').toLowerCase().includes(q)) return true;
+      if ((e.location?.address || '').toLowerCase().includes(q)) return true;
+      /* Date group match */
+      if (formatDateHeader(e.timestamp).toLowerCase().includes(q)) return true;
+      /* Full date string match (e.g. "feb 20", "10pm") */
+      const dateStr = new Date(e.timestamp).toLocaleString().toLowerCase();
+      if (dateStr.includes(q)) return true;
+      /* Coordinate match */
+      if (e.location?.lat && e.location?.lng) {
+        const coords = `${e.location.lat.toFixed(4)}, ${e.location.lng.toFixed(4)}`;
+        if (coords.includes(q)) return true;
+      }
+      return false;
+    });
   }
 
   /* Sort */
@@ -114,13 +125,33 @@ function applyFilters() {
    WIRE CONTROLS (search, filter chips, sort, export, clear)
    ══════════════════════════════════════════ */
 function wireControls() {
-  /* Search */
+  /* Search + autocomplete */
   const searchInput = document.getElementById('history-search');
+  const acContainer = document.getElementById('history-autocomplete');
   if (searchInput) {
     searchInput.addEventListener('input', () => {
       currentSearch = searchInput.value;
       applyFilters();
       renderEventList();
+      showAutocomplete(searchInput.value);
+    });
+    searchInput.addEventListener('focus', () => {
+      if (searchInput.value.length >= 2) showAutocomplete(searchInput.value);
+    });
+    searchInput.addEventListener('blur', () => {
+      setTimeout(() => hideAutocomplete(), 200);
+    });
+  }
+  if (acContainer) {
+    acContainer.addEventListener('click', (e) => {
+      const item = e.target.closest('.history-ac-item');
+      if (!item) return;
+      const val = item.dataset.value;
+      if (searchInput) searchInput.value = val;
+      currentSearch = val;
+      applyFilters();
+      renderEventList();
+      hideAutocomplete();
     });
   }
 
@@ -477,17 +508,145 @@ function updateBadge() {
 }
 
 /* ══════════════════════════════════════════
+   AUTOCOMPLETE (Fix 3)
+   Suggests keywords, dates, locations
+   ══════════════════════════════════════════ */
+function showAutocomplete(query) {
+  const container = document.getElementById('history-autocomplete');
+  if (!container) return;
+  if (!query || query.length < 2) { hideAutocomplete(); return; }
+
+  const suggestions = buildAutocompleteSuggestions(query);
+  if (suggestions.length === 0) { hideAutocomplete(); return; }
+
+  container.innerHTML = suggestions.map(s =>
+    `<div class="history-ac-item" data-value="${escapeHtml(s.searchVal || s.label)}">
+       <span class="history-ac-icon">${s.icon}</span>
+       <span class="history-ac-text">${escapeHtml(s.label)}</span>
+       <span class="history-ac-type">${s.type}</span>
+     </div>`
+  ).join('');
+  container.classList.remove('hidden');
+}
+
+function hideAutocomplete() {
+  const container = document.getElementById('history-autocomplete');
+  if (container) container.classList.add('hidden');
+}
+
+function buildAutocompleteSuggestions(query) {
+  const q = query.toLowerCase().trim();
+  const suggestions = [];
+  const seen = new Set();
+
+  /* 1. Keyword suggestions — event types & titles */
+  allEvents.forEach(evt => {
+    [evt.type, evt.title].forEach(text => {
+      if (!text) return;
+      const lower = text.toLowerCase();
+      if (lower.includes(q) && !seen.has('kw:' + lower)) {
+        seen.add('kw:' + lower);
+        suggestions.push({ label: text, type: 'keyword', icon: '🏷️', searchVal: text });
+      }
+    });
+  });
+
+  /* 2. Date/time patterns — "today", "yesterday", month names */
+  const dateTerms = [
+    { term: 'today', label: 'Today' },
+    { term: 'yesterday', label: 'Yesterday' },
+    { term: 'previous 7 days', label: 'Previous 7 Days' }
+  ];
+  dateTerms.forEach(d => {
+    if (d.term.includes(q) && !seen.has('dt:' + d.term)) {
+      const hasEvents = allEvents.some(e => formatDateHeader(e.timestamp).toLowerCase() === d.term);
+      if (hasEvents) {
+        seen.add('dt:' + d.term);
+        suggestions.push({ label: d.label, type: 'date', icon: '📅', searchVal: d.label });
+      }
+    }
+  });
+
+  const months = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  months.forEach(m => {
+    if (m.includes(q) || m.slice(0, 3).includes(q)) {
+      const years = new Set();
+      allEvents.forEach(evt => {
+        const d = new Date(evt.timestamp);
+        if (d.toLocaleDateString('en', { month: 'long' }).toLowerCase() === m) {
+          years.add(d.getFullYear());
+        }
+      });
+      years.forEach(y => {
+        const label = `${m.charAt(0).toUpperCase() + m.slice(1)} ${y}`;
+        if (!seen.has('dt:' + label.toLowerCase())) {
+          seen.add('dt:' + label.toLowerCase());
+          suggestions.push({ label, type: 'date', icon: '📅', searchVal: label });
+        }
+      });
+    }
+  });
+
+  /* Time patterns: "10pm", "3am", "14:" etc. */
+  const timeMatch = q.match(/^(\d{1,2})\s*(am|pm|:)?/i);
+  if (timeMatch) {
+    const hour = parseInt(timeMatch[1], 10);
+    const ampm = (timeMatch[2] || '').toLowerCase();
+    const matchingDates = new Set();
+    allEvents.forEach(evt => {
+      const d = new Date(evt.timestamp);
+      let h = d.getHours();
+      let matches = false;
+      if (ampm === 'am') matches = (h % 12 === hour % 12 && h < 12);
+      else if (ampm === 'pm') matches = (h % 12 === hour % 12 && h >= 12);
+      else matches = (h === hour || h % 12 === hour);
+      if (matches) matchingDates.add(formatDateHeader(evt.timestamp));
+    });
+    matchingDates.forEach(dg => {
+      if (!seen.has('dg:' + dg.toLowerCase())) {
+        seen.add('dg:' + dg.toLowerCase());
+        suggestions.push({ label: `${dg} (around ${q})`, type: 'date', icon: '🕐', searchVal: dg });
+      }
+    });
+  }
+
+  /* 3. Location patterns — addresses & coordinates */
+  allEvents.forEach(evt => {
+    if (!evt.location) return;
+    if (evt.location.address) {
+      const addr = evt.location.address;
+      if (addr.toLowerCase().includes(q) && !seen.has('loc:' + addr.toLowerCase())) {
+        seen.add('loc:' + addr.toLowerCase());
+        suggestions.push({ label: truncate(addr, 50), type: 'location', icon: '📍', searchVal: addr });
+      }
+    }
+    if (evt.location.lat && evt.location.lng) {
+      const coordStr = `${evt.location.lat.toFixed(4)}, ${evt.location.lng.toFixed(4)}`;
+      if (coordStr.includes(q) && !seen.has('coord:' + coordStr)) {
+        seen.add('coord:' + coordStr);
+        suggestions.push({ label: coordStr, type: 'location', icon: '📍', searchVal: coordStr });
+      }
+    }
+  });
+
+  return suggestions.slice(0, 8);
+}
+
+/* ══════════════════════════════════════════
    HELPERS
    ══════════════════════════════════════════ */
 function formatDateHeader(ts) {
   const date = new Date(ts);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+  const weekAgoStart = new Date(todayStart); weekAgoStart.setDate(weekAgoStart.getDate() - 7);
+  const eventDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-  if (date.toDateString() === today.toDateString()) return 'Today';
-  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  if (eventDay.getTime() >= todayStart.getTime()) return 'Today';
+  if (eventDay.getTime() >= yesterdayStart.getTime()) return 'Yesterday';
+  if (eventDay.getTime() >= weekAgoStart.getTime()) return 'Previous 7 Days';
+  return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
 function fmtDuration(sec) {
