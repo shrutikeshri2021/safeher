@@ -407,15 +407,24 @@ async function uploadSnapshot(base64Data) {
 export async function sendAlertToContacts(location) {
   console.log('🚨 sendAlertToContacts CALLED', location);
 
-  // If location is null (GPS timed out in alerts.js), try fetching it here
+  // If location is null (GPS timed out in alerts.js), try fetching it here with watchPosition
   if (!location && navigator.geolocation) {
-    console.log('📍 Location was null, trying to get GPS here...');
+    console.log('📍 Location was null, trying watchPosition in contacts.js...');
     try {
       location = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-          (err) => reject(err),
-          { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+        let done = false;
+        const timer = setTimeout(() => {
+          if (!done) { done = true; navigator.geolocation.clearWatch(w); reject(new Error('timeout')); }
+        }, 15000);
+        const w = navigator.geolocation.watchPosition(
+          (pos) => {
+            if (!done) {
+              done = true; clearTimeout(timer); navigator.geolocation.clearWatch(w);
+              resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            }
+          },
+          () => { /* keep trying until timeout */ },
+          { enableHighAccuracy: false, maximumAge: 60000 }
         );
       });
       console.log('📍 Got location in contacts.js:', location);
@@ -442,12 +451,13 @@ export async function sendAlertToContacts(location) {
 
   const lat = location?.lat?.toFixed(6) || 'Unknown';
   const lng = location?.lng?.toFixed(6) || 'Unknown';
+  // NEVER use a plain string as a URL — always use a valid link
   const mapsLink = location
     ? `https://www.google.com/maps?q=${location.lat},${location.lng}`
-    : 'Location unavailable';
+    : 'https://www.google.com/maps';
   const satelliteLink = location
     ? `https://www.google.com/maps/@${location.lat},${location.lng},18z/data=!3m1!1e1`
-    : 'Location unavailable';
+    : 'https://www.google.com/maps';
   const timeNow = new Date().toLocaleString();
 
   console.log('📍 Location:', lat, lng);

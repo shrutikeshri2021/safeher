@@ -420,33 +420,38 @@ export function triggerEmergency(location) {
   document.dispatchEvent(new CustomEvent('safeher:emergency', { detail: { location } }));
 }
 
-/* ── Helper: current GPS (with retry and fallback) ── */
+/* ── Helper: current GPS using watchPosition (much faster on mobile) ── */
 function getCurrentLocation() {
   return new Promise((resolve) => {
     if (!navigator.geolocation) { resolve(null); return; }
 
-    // Attempt 1: High accuracy, 10s timeout, allow 30s cached
-    navigator.geolocation.getCurrentPosition(
+    let resolved = false;
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        navigator.geolocation.clearWatch(wid);
+        console.error('📍 GPS timed out after 20s');
+        resolve(null);
+      }
+    }, 20000);
+
+    // watchPosition fires MUCH faster than getCurrentPosition on mobile
+    // because it returns the first available fix (even low-accuracy cell/WiFi)
+    const wid = navigator.geolocation.watchPosition(
       (pos) => {
-        console.log('📍 GPS obtained (high accuracy)');
-        resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          navigator.geolocation.clearWatch(wid);
+          console.log('📍 GPS obtained:', pos.coords.latitude, pos.coords.longitude, 'accuracy:', pos.coords.accuracy);
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        }
       },
-      () => {
-        console.warn('📍 High accuracy GPS failed, retrying with low accuracy...');
-        // Attempt 2: Low accuracy, 15s timeout, allow 60s cached
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            console.log('📍 GPS obtained (low accuracy fallback)');
-            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          },
-          (err) => {
-            console.error('📍 All GPS attempts failed:', err?.message);
-            resolve(null);
-          },
-          { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-        );
+      (err) => {
+        console.warn('📍 watchPosition error:', err?.code, err?.message);
+        // Don't resolve on error — let it keep trying until timeout
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
     );
   });
 }
