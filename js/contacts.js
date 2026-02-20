@@ -328,10 +328,81 @@ async function sendLocationViaShare() {
 }
 
 /* ══════════════════════════════════════════
+   UPLOAD SNAPSHOT — tries multiple FREE hosts
+   No API key, no signup needed
+   Returns a public URL for email embedding
+   ══════════════════════════════════════════ */
+function base64ToBlob(base64Data) {
+  const byteString = atob(base64Data.split(',')[1]);
+  const mimeType = base64Data.split(',')[0].match(/:(.*?);/)[1] || 'image/jpeg';
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: mimeType });
+}
+
+async function uploadSnapshot(base64Data) {
+  const blob = base64ToBlob(base64Data);
+  console.log('📸 Snapshot blob size:', blob.size, 'bytes');
+
+  // Try Telegraph (Telegram)
+  try {
+    console.log('📸 Trying Telegraph upload...');
+    const fd1 = new FormData();
+    fd1.append('file', blob, 'sos_snapshot.jpg');
+    const r1 = await fetch('https://telegra.ph/upload', { method: 'POST', body: fd1 });
+    const j1 = await r1.json();
+    console.log('📸 Telegraph response:', j1);
+    if (Array.isArray(j1) && j1[0]?.src) {
+      return 'https://telegra.ph' + j1[0].src;
+    }
+  } catch (e) { console.warn('📸 Telegraph failed:', e); }
+
+  // Try freeimage.host (no key needed for anonymous uploads)
+  try {
+    console.log('📸 Trying freeimage.host upload...');
+    const fd2 = new FormData();
+    fd2.append('source', blob, 'sos_snapshot.jpg');
+    fd2.append('type', 'file');
+    fd2.append('action', 'upload');
+    const r2 = await fetch('https://freeimage.host/api/1/upload?key=6d207e02198a847aa98d0a2a901485a5', {
+      method: 'POST',
+      body: fd2
+    });
+    const j2 = await r2.json();
+    console.log('📸 freeimage response:', j2);
+    if (j2.image?.url) {
+      return j2.image.url;
+    }
+  } catch (e) { console.warn('📸 freeimage failed:', e); }
+
+  // Try tmpfiles.org
+  try {
+    console.log('📸 Trying tmpfiles.org upload...');
+    const fd3 = new FormData();
+    fd3.append('file', blob, 'sos_snapshot.jpg');
+    const r3 = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: fd3 });
+    const j3 = await r3.json();
+    console.log('📸 tmpfiles response:', j3);
+    if (j3.data?.url) {
+      // Convert page URL to direct download URL
+      const directUrl = j3.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+      return directUrl;
+    }
+  } catch (e) { console.warn('📸 tmpfiles failed:', e); }
+
+  console.error('📸 All upload hosts failed');
+  return '';
+}
+
+/* ══════════════════════════════════════════
    SEND ALERT TO ALL CONTACTS (used by SOS)
    Uses EmailJS to auto-send real emails to
    every saved contact — FULLY AUTOMATIC
-   No manual sending needed at all
+   Includes: GPS, address, satellite map,
+   camera snapshot
    ══════════════════════════════════════════ */
 export async function sendAlertToContacts(location) {
   console.log('🚨 sendAlertToContacts CALLED', location);
@@ -357,10 +428,124 @@ export async function sendAlertToContacts(location) {
   const mapsLink = location
     ? `https://www.google.com/maps?q=${location.lat},${location.lng}`
     : 'Location unavailable';
+  const satelliteLink = location
+    ? `https://www.google.com/maps/@${location.lat},${location.lng},18z/data=!3m1!1e1`
+    : 'Location unavailable';
   const timeNow = new Date().toLocaleString();
 
   console.log('📍 Location:', lat, lng);
   console.log('🔗 Maps link:', mapsLink);
+
+  // ═══ REVERSE GEOCODE — get real address (free via OpenStreetMap) ═══
+  let address = 'Address could not be determined';
+  if (location) {
+    try {
+      console.log('🏠 Reverse geocoding...');
+      const geoUrl = `https://nominatim.openstreetmap.org/reverse?lat=${location.lat}&lon=${location.lng}&format=json&zoom=18&addressdetails=1&accept_language=en`;
+      const geoRes = await fetch(geoUrl);
+      const geoData = await geoRes.json();
+      console.log('🏠 Geocoding response:', geoData);
+      if (geoData.display_name) {
+        address = geoData.display_name;
+        console.log('🏠 Address:', address);
+      }
+      // Also build a short readable address from parts
+      if (geoData.address) {
+        const a = geoData.address;
+        const parts = [a.road, a.neighbourhood, a.suburb, a.city || a.town || a.village, a.state, a.postcode].filter(Boolean);
+        if (parts.length > 0) {
+          address = parts.join(', ');
+          console.log('🏠 Short address:', address);
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ Reverse geocoding failed:', err);
+    }
+  }
+
+  // ═══ CAPTURE SNAPSHOT from active SOS video recording (does NOT stop recording) ═══
+  let snapshotDataUrl = '';
+  try {
+    console.log('📸 Capturing snapshot...');
+    // Dynamic import to avoid circular dependency
+    const recorderMod = await import('./recorder.js');
+    const activeStream = recorderMod.getActiveStream ? recorderMod.getActiveStream() : null;
+    const videoTrack = activeStream?.getVideoTracks()[0];
+
+    if (videoTrack && videoTrack.readyState === 'live') {
+      if (typeof ImageCapture !== 'undefined') {
+        const imageCapture = new ImageCapture(videoTrack);
+        const bitmap = await imageCapture.grabFrame();
+        const canvas = document.createElement('canvas');
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        canvas.getContext('2d').drawImage(bitmap, 0, 0);
+        snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+      } else {
+        const video = document.createElement('video');
+        video.srcObject = activeStream;
+        video.setAttribute('playsinline', 'true');
+        video.muted = true;
+        await video.play();
+        await new Promise(r => setTimeout(r, 300));
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        video.pause();
+        video.srcObject = null;
+      }
+      console.log('📸 Snapshot captured from recording stream');
+    } else {
+      console.log('📸 No active video track, opening camera briefly...');
+      const camStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 } }
+      });
+      const video = document.createElement('video');
+      video.srcObject = camStream;
+      video.setAttribute('playsinline', 'true');
+      await video.play();
+      await new Promise(r => setTimeout(r, 500));
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+      camStream.getTracks().forEach(t => t.stop());
+      console.log('📸 Snapshot from temp camera');
+    }
+  } catch (err) {
+    console.warn('📸 Snapshot failed (continuing without it):', err);
+  }
+
+  // ═══ RESIZE + UPLOAD SNAPSHOT to ImgBB (free image host) ═══
+  let snapshotUrl = '';
+  if (snapshotDataUrl) {
+    try {
+      // Resize to max 480px width for fast upload
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = snapshotDataUrl;
+      });
+      const MAX_W = 480;
+      if (img.width > MAX_W) {
+        const scale = MAX_W / img.width;
+        const canvas = document.createElement('canvas');
+        canvas.width = MAX_W;
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.5);
+        console.log('📸 Snapshot resized to', canvas.width, 'x', canvas.height);
+      }
+    } catch (e) { console.warn('📸 Resize failed, using original:', e); }
+
+    // Upload to ImgBB to get a public URL (email clients block base64 data URIs)
+    showToast('📸 Uploading snapshot…', 'info');
+    snapshotUrl = await uploadSnapshot(snapshotDataUrl);
+  }
 
   // ═══ FULLY AUTOMATIC EMAIL via EmailJS to ALL contacts ═══
   const emailContacts = contacts.filter(c => c.email);
@@ -372,13 +557,28 @@ export async function sendAlertToContacts(location) {
     let emailsSent = 0;
     let emailsFailed = 0;
 
+    // Build snapshot section with public URL (works in all email clients)
+    const snapshotHtml = snapshotUrl
+      ? `\n\n📸 CAMERA SNAPSHOT (at time of SOS):\n<img src="${snapshotUrl}" alt="Emergency Snapshot" style="max-width:100%;border-radius:8px;margin:8px 0;" />`
+      : (snapshotDataUrl ? '\n\n📸 Camera snapshot was captured but could not be uploaded.' : '');
+
+    // Live location link — opens Google Maps with directions to the person
+    const liveDirectionsLink = location
+      ? `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}&travelmode=driving`
+      : mapsLink;
+
+    const fullMessage = `🚨🚨🚨 EMERGENCY ALERT 🚨🚨🚨\n\n${userName} IS IN DANGER AND NEEDS IMMEDIATE HELP!\n\n📍 LIVE GPS LOCATION (tap to open map):\n${mapsLink}\n\n🚗 GET DIRECTIONS TO THEM (navigate now):\n${liveDirectionsLink}\n\n🗯️ SATELLITE VIEW (see if forest/desert/city):\n${satelliteLink}\n\n🏠 ADDRESS:\n${address}\n\n📍 GPS Coordinates: Lat ${lat}, Lng ${lng}\n\n⏰ Time: ${timeNow}\n\n📹 VIDEO IS BEING RECORDED on their device for evidence.\n\n📞 Please CALL them immediately or contact local police!${snapshotHtml}\n\nThis is an automated SOS alert from SafeHer Safety App.`;
+
     const emailPromises = emailContacts.map(contact => {
       const templateParams = {
         to_email: contact.email,
         from_name: userName,
         location_link: mapsLink,
+        satellite_link: satelliteLink,
+        address: address,
         time: timeNow,
-        message: `🚨🚨🚨 EMERGENCY ALERT 🚨🚨🚨\n\n${userName} IS IN DANGER AND NEEDS IMMEDIATE HELP!\n\n📍 LOCATION:\n${mapsLink}\n\n📍 Coordinates: Lat ${lat}, Lng ${lng}\n\n⏰ Time: ${timeNow}\n\n📞 Please CALL them immediately or contact local police!\n\nThis is an automated SOS alert from SafeHer Safety App.`
+        snapshot_url: snapshotUrl,
+        message: fullMessage
       };
       console.log(`📨 Sending email to ${contact.name}:`, templateParams);
 
@@ -406,6 +606,11 @@ export async function sendAlertToContacts(location) {
     console.error('❌ EmailJS is NOT loaded! typeof emailjs =', typeof emailjs);
     showToast('❌ Email service not loaded — check internet connection', 'error');
   }
+
+  // ═══ REAL-TIME LOCATION: Send updated location every 2 minutes ═══
+  if (emailContacts.length > 0 && typeof emailjs !== 'undefined') {
+    startLiveLocationUpdates(userName, emailContacts);
+  }
 }
 
 /* ── Utility ── */
@@ -413,4 +618,75 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+/* ══════════════════════════════════════════
+   REAL-TIME LIVE LOCATION UPDATES
+   Sends updated GPS every 2 minutes
+   while SOS is active
+   ══════════════════════════════════════════ */
+let liveLocationInterval = null;
+let locationUpdateCount = 0;
+
+function startLiveLocationUpdates(userName, emailContacts) {
+  // Stop any existing tracker
+  stopLiveLocationUpdates();
+  locationUpdateCount = 0;
+
+  console.log('📍 Starting real-time location updates every 2 min...');
+
+  liveLocationInterval = setInterval(async () => {
+    locationUpdateCount++;
+
+    // Stop after 30 updates (1 hour) to save EmailJS quota
+    if (locationUpdateCount >= 30) {
+      console.log('📍 Stopping location updates after 1 hour');
+      stopLiveLocationUpdates();
+      return;
+    }
+
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+          err => reject(err),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      });
+
+      const lat = pos.lat.toFixed(6);
+      const lng = pos.lng.toFixed(6);
+      const newMapsLink = `https://www.google.com/maps?q=${pos.lat},${pos.lng}`;
+      const directionsLink = `https://www.google.com/maps/dir/?api=1&destination=${pos.lat},${pos.lng}&travelmode=driving`;
+      const timeNow = new Date().toLocaleString();
+
+      console.log(`📍 Location update #${locationUpdateCount}: ${lat}, ${lng}`);
+
+      // Send update email to all contacts
+      const updatePromises = emailContacts.map(contact =>
+        emailjs.send('service_y8b36ls', 'template_58mvinn', {
+          to_email: contact.email,
+          from_name: userName,
+          location_link: newMapsLink,
+          time: timeNow,
+          message: `📍 LIVE LOCATION UPDATE #${locationUpdateCount}\n\n${userName} is still in an emergency!\n\n📍 CURRENT LOCATION:\n${newMapsLink}\n\n🚗 NAVIGATE TO THEM:\n${directionsLink}\n\n📍 GPS: Lat ${lat}, Lng ${lng}\n⏰ Time: ${timeNow}\n\n📹 Video is still recording.\n\nThis is an automated location update from SafeHer.`
+        }).catch(err => console.error('❌ Location update email failed:', err))
+      );
+
+      await Promise.allSettled(updatePromises);
+      console.log(`✅ Location update #${locationUpdateCount} sent`);
+
+    } catch (err) {
+      console.warn('⚠️ Could not get location for update:', err);
+    }
+  }, 2 * 60 * 1000); // Every 2 minutes
+}
+
+export function stopLiveLocationUpdates() {
+  if (liveLocationInterval) {
+    clearInterval(liveLocationInterval);
+    liveLocationInterval = null;
+    locationUpdateCount = 0;
+    console.log('📍 Live location updates stopped');
+  }
 }

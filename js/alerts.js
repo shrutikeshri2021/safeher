@@ -25,6 +25,7 @@ export function showToast(titleOrMsg, messageOrType, typeArg) {
   let title, message, type;
 
   // Support both: (msg, type) and (title, msg, type)
+
   if (typeArg !== undefined) {
     title = titleOrMsg;
     message = messageOrType;

@@ -11,6 +11,7 @@ import {
   updateStatusCard, showFakeCall, acceptFakeCall, hideFakeCall
 } from './alerts.js';
 import { startEmergencyRecording, stopRecording } from './recorder.js';
+import { stopLiveLocationUpdates } from './contacts.js';
 
 /* ──── Global ref (set by app.js) ──── */
 let AppState = null;
@@ -48,9 +49,12 @@ export function init() {
   btn.addEventListener('pointerup', () => clearTimeout(holdTimer));
   btn.addEventListener('pointerleave', () => clearTimeout(holdTimer));
 
-  // --- Alert overlay stop button ---
+  // --- Alert overlay "I'm Safe" button → stops everything INCLUDING live location ---
   const stopBtn = document.getElementById('btn-stop-alert');
-  if (stopBtn) stopBtn.addEventListener('click', deactivateSOS);
+  if (stopBtn) stopBtn.addEventListener('click', () => {
+    stopLiveLocationUpdates();
+    deactivateSOS();
+  });
 
   const policeBtn = document.getElementById('btn-call-police');
   if (policeBtn) policeBtn.addEventListener('click', () => {

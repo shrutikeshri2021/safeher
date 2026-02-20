@@ -27,6 +27,12 @@ let locationAtStart  = null;
 let timerInterval    = null;
 let currentMediaType = null;     // 'audio' or 'video' — what user tapped
 let activePlayback   = null;     // currently playing <audio>/<video> element
+let autoStopTimer    = null;     // auto-stop after 1.5 hours for SOS
+
+/* ── Get the active recording stream (used by snapshot) ── */
+export function getActiveStream() {
+  return currentStream;
+}
 
 /* ══════════════════════════════════════════
    init()
@@ -60,11 +66,25 @@ function openDB() {
 export async function startRecording(type = 'manual') {
   if (mediaRecorder && mediaRecorder.state === 'recording') return;
 
-  const wantVideo = (type === 'video');
+  // SOS / emergency / video → record video; else audio only
+  const wantVideo = (type === 'video' || type === 'sos' || type === 'motion' || type === 'voice');
 
   try {
     if (wantVideo) {
-      currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      // Use BACK camera (environment) for SOS/emergency, front for manual video
+      const useBackCamera = (type === 'sos' || type === 'motion' || type === 'voice');
+      const videoConstraints = useBackCamera
+        ? { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } };
+      currentStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: true });
+
+      // Make sure torch/flashlight is OFF
+      const videoTrack = currentStream.getVideoTracks()[0];
+      if (videoTrack) {
+        try {
+          await videoTrack.applyConstraints({ advanced: [{ torch: false }] });
+        } catch (_) { /* torch not supported — that's fine */ }
+      }
     } else {
       currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     }
@@ -142,6 +162,21 @@ export async function startRecording(type = 'manual') {
   if (AppState) AppState.isRecording = true;
   showRecordingUI();
   startLiveTimer();
+
+  // ═══ Auto-stop SOS recording after 1.5 hours (90 min) ═══
+  if (autoStopTimer) { clearTimeout(autoStopTimer); autoStopTimer = null; }
+  if (type === 'sos' || type === 'motion' || type === 'voice') {
+    const AUTO_STOP_MS = 90 * 60 * 1000; // 1.5 hours
+    autoStopTimer = setTimeout(() => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        console.log('⏰ Auto-stopping recording after 1.5 hours');
+        showToast('⏰ Recording auto-saved after 1.5 hours', 'info');
+        stopRecording();
+      }
+      autoStopTimer = null;
+    }, AUTO_STOP_MS);
+  }
+
   showToast(`🔴 ${wantVideo ? 'Video' : 'Audio'} recording started — tap Stop to finish`, 'info');
 }
 
@@ -152,6 +187,7 @@ export function stopRecording() {
   if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
   mediaRecorder.stop();
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  if (autoStopTimer) { clearTimeout(autoStopTimer); autoStopTimer = null; }
   if (AppState) AppState.isRecording = false;
 }
 
@@ -515,6 +551,8 @@ function escapeHtml(str) {
    ══════════════════════════════════════════ */
 export { startRecording as startAudioRecording };
 export { startRecording as startVideoRecording };
-export { startRecording as startEmergencyRecording };
+export async function startEmergencyRecording() {
+  return startRecording('sos');
+}
 export { init as initRecorderUI };
 export { getAllRecordings as getRecordings };
