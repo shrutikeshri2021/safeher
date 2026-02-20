@@ -248,31 +248,46 @@ export function stopJourney() {
   showToast('Journey Ended', `Tracked ${journeyCoords.length} points, ${totalDistance.toFixed(1)} km.`, 'info');
 }
 
-/* ── Share Location via WhatsApp ───────────────── */
+/* ── Share Location — show modal with options ──── */
+let pendingShareLocation = null;
+let shareModalWired = false;
+
 export function shareLocation() {
   if (!navigator.geolocation) {
     showToast('Location not available — enable GPS', 'error');
     return;
   }
 
-  showToast('📍 Getting your location…', 'info');
+  // Wire modal buttons once on first call
+  if (!shareModalWired) {
+    wireShareModal();
+    shareModalWired = true;
+  }
 
-  // Try high accuracy first, then fallback to low accuracy
+  const modal = document.getElementById('share-location-modal');
+  const coordsEl = document.getElementById('share-modal-coords');
+  if (!modal) return;
+
+  // Show modal immediately with loading state
+  pendingShareLocation = null;
+  if (coordsEl) coordsEl.textContent = 'Getting your location…';
+  modal.classList.remove('hidden');
+
+  // Get GPS position
   navigator.geolocation.getCurrentPosition(
-    (pos) => openWhatsAppWithLocation(pos),
+    (pos) => setSharePosition(pos),
     () => {
-      // Retry with lower accuracy and longer timeout
-      console.log('📍 High accuracy failed, retrying with low accuracy…');
+      // Retry with lower accuracy
       navigator.geolocation.getCurrentPosition(
-        (pos) => openWhatsAppWithLocation(pos),
+        (pos) => setSharePosition(pos),
         (err) => {
-          console.error('📍 Location failed:', err.code, err.message);
+          if (coordsEl) coordsEl.textContent = '⚠️ Could not get location';
           if (err.code === 1) {
-            showToast('Location permission denied — tap the 🔒 icon in your browser address bar and allow Location', 'error');
+            showToast('Location permission denied — allow Location in browser settings', 'error');
           } else if (err.code === 2) {
-            showToast('GPS unavailable — make sure Location/GPS is turned ON in your phone settings', 'error');
+            showToast('GPS unavailable — turn ON Location in phone settings', 'error');
           } else {
-            showToast('Location timed out — please go outside or near a window and try again', 'error');
+            showToast('Location timed out — go outside and try again', 'error');
           }
         },
         { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
@@ -282,16 +297,81 @@ export function shareLocation() {
   );
 }
 
-function openWhatsAppWithLocation(pos) {
+function setSharePosition(pos) {
   const { latitude: lat, longitude: lng } = pos.coords;
+  pendingShareLocation = { lat, lng };
+  const coordsEl = document.getElementById('share-modal-coords');
+  if (coordsEl) coordsEl.textContent = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+}
+
+/* ── Wire share modal buttons ──────────────────── */
+function wireShareModal() {
+  const modal = document.getElementById('share-location-modal');
+  if (!modal) return;
+
+  // Close button
+  const closeBtn = document.getElementById('btn-close-share-modal');
+  if (closeBtn) closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+  // Close on backdrop click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.add('hidden');
+  });
+
+  // Share option buttons
+  modal.querySelectorAll('.share-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.dataset.share;
+      if (!pendingShareLocation) {
+        showToast('Still getting location… please wait', 'warning');
+        return;
+      }
+      handleShareOption(type, pendingShareLocation);
+    });
+  });
+}
+
+function handleShareOption(type, { lat, lng }) {
   const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
   const message = `📍 My current location (SafeHer):\n${mapsLink}\nLat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}\n\n— Sent from SafeHer Safety App`;
+  const subject = '📍 My Live Location — SafeHer';
   const encoded = encodeURIComponent(message);
+  const encodedSubject = encodeURIComponent(subject);
+  const modal = document.getElementById('share-location-modal');
 
-  // Open WhatsApp with pre-filled message
-  const whatsappUrl = `https://wa.me/?text=${encoded}`;
-  window.open(whatsappUrl, '_blank');
-  showToast('Opening WhatsApp…', 'success');
+  switch (type) {
+    case 'whatsapp':
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+      showToast('Opening WhatsApp…', 'success');
+      break;
+
+    case 'telegram':
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(mapsLink)}&text=${encodeURIComponent(`📍 My current location (SafeHer)\nLat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`)}`, '_blank');
+      showToast('Opening Telegram…', 'success');
+      break;
+
+    case 'email':
+      window.location.href = `mailto:?subject=${encodedSubject}&body=${encoded}`;
+      showToast('Opening Email…', 'success');
+      break;
+
+    case 'outlook':
+      window.open(`https://outlook.live.com/mail/0/deeplink/compose?subject=${encodedSubject}&body=${encoded}`, '_blank');
+      showToast('Opening Outlook…', 'success');
+      break;
+
+    case 'copy':
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(`📍 My location: ${mapsLink}\nLat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`)
+          .then(() => showToast('📋 Location copied to clipboard!', 'success'))
+          .catch(() => showToast('Could not copy — try again', 'error'));
+      } else {
+        showToast('Clipboard not supported on this browser', 'error');
+      }
+      break;
+  }
+
+  if (modal) modal.classList.add('hidden');
 }
 
 /* ── Haversine Distance (km) ──────────────────── */

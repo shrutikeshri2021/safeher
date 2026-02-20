@@ -67,7 +67,7 @@ export async function startRecording(type = 'manual') {
   if (mediaRecorder && mediaRecorder.state === 'recording') return;
 
   // SOS / emergency / video → record video; else audio only
-  const wantVideo = (type === 'video' || type === 'sos' || type === 'motion' || type === 'voice');
+  const wantVideo = (type === 'video' || type === 'sos' || type === 'motion' || type === 'voice' || type === 'manual');
 
   try {
     if (wantVideo) {
@@ -76,7 +76,16 @@ export async function startRecording(type = 'manual') {
       const videoConstraints = useBackCamera
         ? { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
         : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } };
-      currentStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: true });
+      const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: true };
+      currentStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: audioConstraints });
+
+      // If no audio track was returned, request mic separately and merge
+      if (currentStream.getAudioTracks().length === 0) {
+        try {
+          const micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+          micStream.getAudioTracks().forEach(t => currentStream.addTrack(t));
+        } catch (_) { /* mic unavailable — record video without audio */ }
+      }
 
       // Make sure torch/flashlight is OFF
       const videoTrack = currentStream.getVideoTracks()[0];
@@ -86,7 +95,7 @@ export async function startRecording(type = 'manual') {
         } catch (_) { /* torch not supported — that's fine */ }
       }
     } else {
-      currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      currentStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } });
     }
   } catch (_) {
     // If video fails, fallback to audio

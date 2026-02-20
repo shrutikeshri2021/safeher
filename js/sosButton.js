@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════
    SafeHer — SOS Button Module  (Step 5)
-   Single tap → activate SOS
-   3-second hold → cancel SOS
+   2-second hold → activate SOS
+   Single tap while active → cancel SOS
    Fake Call with in-call timer
    ═══════════════════════════════════════════════ */
 
@@ -30,24 +30,24 @@ export function init() {
   const btn = document.getElementById('btn-sos');
   if (!btn) return;
 
-  // --- Tap / Click → activate SOS ---
-  btn.addEventListener('click', () => {
-    if (isHolding) { isHolding = false; return; }          // ignore click at end of hold
-    if (AppState && AppState.sosActive) return;              // already active
-    activateSOS();
-  });
-
-  // --- Long-press (3 s) → deactivate SOS ---
+  // --- Long-press (2 s) → activate SOS ---
   btn.addEventListener('pointerdown', (e) => {
-    if (!(AppState && AppState.sosActive)) return;           // only while SOS is active
+    if (AppState && AppState.sosActive) return;           // already active — tap handles cancel
     isHolding = false;
     holdTimer = setTimeout(() => {
       isHolding = true;
-      deactivateSOS();
-    }, 3000);
+      activateSOS();
+    }, 2000);
   });
   btn.addEventListener('pointerup', () => clearTimeout(holdTimer));
   btn.addEventListener('pointerleave', () => clearTimeout(holdTimer));
+
+  // --- Tap / Click while active → deactivate SOS ---
+  btn.addEventListener('click', () => {
+    if (isHolding) { isHolding = false; return; }          // ignore click at end of hold
+    if (!(AppState && AppState.sosActive)) return;          // not active — hold to activate
+    deactivateSOS();
+  });
 
   // --- Alert overlay "I'm Safe" button → stops everything INCLUDING live location ---
   const stopBtn = document.getElementById('btn-stop-alert');
@@ -101,12 +101,12 @@ export function activateSOS() {
   const btn = document.getElementById('btn-sos');
   if (btn) {
     btn.classList.add('sos-active');
-    btn.querySelector('.sos-label')?.replaceChildren(document.createTextNode('HOLD 3 s TO CANCEL'));
+    btn.querySelector('.sos-label')?.replaceChildren(document.createTextNode('TAP TO CANCEL'));
   }
 
   // --- Update header / status card ---
   updateHeaderStatus('alert', '🚨 SOS ACTIVE');
-  updateStatusCard('alert', '🚨 SOS Active', 'Hold SOS for 3 seconds to cancel.');
+  updateStatusCard('alert', '🚨 SOS Active', 'Tap SOS button to cancel.');
 
   // --- Start recording ---
   startEmergencyRecording().catch(() => {});
