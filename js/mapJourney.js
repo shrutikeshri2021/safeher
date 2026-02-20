@@ -10,13 +10,30 @@ import { sendAlertToContacts } from './contacts.js';
 
 let map = null;
 let userMarker = null;
+let accuracyCircle = null;
 let journeyPath = null;
 let watchId = null;
+let liveWatchId = null;      // always-on location watcher for blue dot
 let journeyActive = false;
 let journeyStartTime = null;
 let journeyCoords = [];
 let journeyTimerInterval = null;
 let totalDistance = 0;
+
+/* ── Reusable user icon ── */
+function createUserIcon() {
+  return L.divIcon({
+    className: 'user-marker-icon',
+    html: `<div style="position:relative;width:22px;height:22px;">
+      <div style="position:absolute;inset:0;border-radius:50%;background:rgba(10,132,255,0.2);animation:livePulse 2s ease-out infinite;"></div>
+      <div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;
+        background:#0A84FF;border:3px solid #fff;
+        box-shadow:0 0 12px rgba(10,132,255,0.6);"></div>
+    </div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11]
+  });
+}
 
 /* ── Initialize Map ───────────────────────────── */
 export function initMap() {
@@ -26,7 +43,7 @@ export function initMap() {
   // Default center (will update with user location)
   map = L.map('map-container', {
     center: [20.5937, 78.9629], // India center
-    zoom: 13,
+    zoom: 15,
     zoomControl: true,
     attributionControl: true
   });
@@ -36,32 +53,12 @@ export function initMap() {
     maxZoom: 19
   }).addTo(map);
 
-  // Custom user location marker
-  const userIcon = L.divIcon({
-    className: 'user-marker',
-    html: `<div style="
-      width: 18px; height: 18px; border-radius: 50%;
-      background: #0A84FF; border: 3px solid #fff;
-      box-shadow: 0 0 12px rgba(10,132,255,0.5);
-    "></div>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9]
-  });
+  // Force map to recalculate size after render
+  setTimeout(() => map.invalidateSize(), 200);
+  setTimeout(() => map.invalidateSize(), 500);
 
-  // Try to get initial location
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        map.setView([lat, lng], 15);
-        userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map);
-      },
-      () => {
-        showToast('Location', 'Could not get your location. Enable GPS.', 'warning');
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  }
+  // Start live location tracking (always-on blue dot)
+  startLiveLocationDot();
 
   // Bind journey buttons
   const startBtn = document.getElementById('btn-start-journey');
@@ -71,6 +68,59 @@ export function initMap() {
   if (startBtn) startBtn.addEventListener('click', startJourney);
   if (stopBtn) stopBtn.addEventListener('click', stopJourney);
   if (shareBtn) shareBtn.addEventListener('click', shareLocation);
+}
+
+/* ── Always-on live location blue dot ─────────── */
+function startLiveLocationDot() {
+  if (liveWatchId != null || !navigator.geolocation) return;
+
+  // Get initial position first for immediate feedback
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      updateUserPosition(lat, lng, accuracy);
+      map.setView([lat, lng], 16);
+    },
+    () => showToast('Could not get location — enable GPS', 'warning'),
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+
+  // Then continuously watch position
+  liveWatchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      updateUserPosition(lat, lng, accuracy);
+    },
+    () => { /* silently retry */ },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 2000 }
+  );
+}
+
+/* ── Update the blue dot + accuracy circle ─────── */
+function updateUserPosition(lat, lng, accuracy) {
+  if (!map) return;
+  const latlng = [lat, lng];
+
+  if (userMarker) {
+    userMarker.setLatLng(latlng);
+  } else {
+    userMarker = L.marker(latlng, { icon: createUserIcon(), zIndexOffset: 1000 }).addTo(map);
+  }
+
+  // Accuracy circle
+  if (accuracyCircle) {
+    accuracyCircle.setLatLng(latlng);
+    accuracyCircle.setRadius(accuracy || 30);
+  } else {
+    accuracyCircle = L.circle(latlng, {
+      radius: accuracy || 30,
+      color: '#0A84FF',
+      fillColor: '#0A84FF',
+      fillOpacity: 0.08,
+      weight: 1,
+      opacity: 0.3
+    }).addTo(map);
+  }
 }
 
 /* ── Start Journey Tracking ───────────────────── */
@@ -113,7 +163,7 @@ export function startJourney() {
   // Start watching position
   watchId = navigator.geolocation.watchPosition(
     (pos) => {
-      const { latitude: lat, longitude: lng, speed } = pos.coords;
+      const { latitude: lat, longitude: lng, speed, accuracy } = pos.coords;
       const newCoord = [lat, lng];
 
       // Calculate distance from last point
@@ -125,30 +175,16 @@ export function startJourney() {
       journeyCoords.push(newCoord);
       journeyPath.addLatLng(newCoord);
 
-      // Update user marker
-      const userIcon = L.divIcon({
-        className: 'user-marker',
-        html: `<div style="
-          width: 18px; height: 18px; border-radius: 50%;
-          background: #0A84FF; border: 3px solid #fff;
-          box-shadow: 0 0 12px rgba(10,132,255,0.5);
-        "></div>`,
-        iconSize: [18, 18],
-        iconAnchor: [9, 9]
-      });
+      // Update blue dot marker
+      updateUserPosition(lat, lng, accuracy);
 
-      if (userMarker) {
-        userMarker.setLatLng(newCoord);
-      } else {
-        userMarker = L.marker(newCoord, { icon: userIcon }).addTo(map);
-      }
-
-      map.panTo(newCoord);
+      // Keep map centered on user
+      map.panTo(newCoord, { animate: true, duration: 0.5 });
 
       // Update speed display
       const speedEl = document.getElementById('journey-speed');
       if (speedEl) {
-        const kmh = speed != null ? Math.round(speed * 3.6) : 0;
+        const kmh = speed != null && speed >= 0 ? Math.round(speed * 3.6) : 0;
         speedEl.textContent = `${kmh} km/h`;
       }
 
@@ -161,12 +197,13 @@ export function startJourney() {
       }
     },
     (err) => {
-      showToast('GPS Error', 'Lost GPS signal. Retrying…', 'warning');
+      console.warn('GPS error during journey:', err);
+      showToast('Lost GPS signal. Retrying…', 'warning');
     },
     {
       enableHighAccuracy: true,
       timeout: 15000,
-      maximumAge: 3000
+      maximumAge: 2000
     }
   );
 
@@ -211,39 +248,29 @@ export function stopJourney() {
   showToast('Journey Ended', `Tracked ${journeyCoords.length} points, ${totalDistance.toFixed(1)} km.`, 'info');
 }
 
-/* ── Share Location ───────────────────────────── */
-export async function shareLocation() {
+/* ── Share Location via WhatsApp ───────────────── */
+export function shareLocation() {
   if (!navigator.geolocation) {
-    showToast('No GPS', 'Location not available.', 'error');
+    showToast('Location not available — enable GPS', 'error');
     return;
   }
 
+  showToast('Getting your location…', 'info');
+
   navigator.geolocation.getCurrentPosition(
-    async (pos) => {
+    (pos) => {
       const { latitude: lat, longitude: lng } = pos.coords;
       const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
-      const message = `📍 My current location (SafeHer):\n${mapsLink}\nLat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+      const message = `📍 My current location (SafeHer):\n${mapsLink}\nLat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}\n\n— Sent from SafeHer Safety App`;
+      const encoded = encodeURIComponent(message);
 
-      if (navigator.share) {
-        try {
-          await navigator.share({ title: '📍 My Location — SafeHer', text: message });
-          showToast('Shared', 'Location shared successfully.', 'success');
-          return;
-        } catch (err) {
-          if (err.name === 'AbortError') return;
-        }
-      }
-
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(message);
-        showToast('Copied', 'Location link copied to clipboard.', 'success');
-      } catch {
-        showToast('Location', mapsLink, 'info');
-      }
+      // Open WhatsApp with pre-filled message
+      const whatsappUrl = `https://wa.me/?text=${encoded}`;
+      window.open(whatsappUrl, '_blank');
+      showToast('Opening WhatsApp…', 'success');
     },
     () => {
-      showToast('GPS Error', 'Could not get location. Enable GPS.', 'error');
+      showToast('Could not get location. Enable GPS.', 'error');
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );
