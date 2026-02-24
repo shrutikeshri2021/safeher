@@ -51,6 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
   history.init();
   batteryWatch.init();
 
+  /* ── Theme (light / dark) ── */
+  initTheme();
+
   /* ── Log app opened (once per session) ── */
   logEvent('app_opened').catch(() => {});
 
@@ -195,4 +198,33 @@ function registerSW() {
       .then(reg => console.log('[SW] registered', reg.scope))
       .catch(err => console.warn('[SW] registration failed', err));
   }
+}
+
+/* ══════════════════════════════════════════
+   THEME SWITCHER  (light / dark)
+   Persists to localStorage, updates meta
+   theme-color for mobile status bar.
+   ══════════════════════════════════════════ */
+function initTheme() {
+  const saved = localStorage.getItem('safeher_theme');
+  const theme = saved || 'dark';   // default dark
+  applyTheme(theme);
+
+  const btn = document.getElementById('btn-theme-toggle');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      localStorage.setItem('safeher_theme', next);
+    });
+  }
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const knob = document.getElementById('theme-knob');
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (knob) knob.textContent = theme === 'light' ? '☀️' : '🌙';
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#F2F4F8' : '#0B0F1A');
 }
