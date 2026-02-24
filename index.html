@@ -31,6 +31,10 @@
       <span class="header-title">SafeHer</span>
     </div>
     <div class="header-right">
+      <span id="battery-status" class="battery-badge" title="Battery level">
+        <span class="battery-icon">🔋</span>
+        <span class="battery-pct"></span>
+      </span>
       <div id="status-indicator" class="status-badge status-safe">
         <span class="status-dot"></span>
         <span class="status-text">Safe</span>
@@ -213,6 +217,20 @@
         <div class="waypoints-actions">
           <button id="btn-clear-waypoints" class="journey-link-btn" type="button">Clear All</button>
         </div>
+
+        <!-- Destination & Expected Arrival Time -->
+        <div class="journey-eta-card">
+          <h4>📍 Destination & ETA</h4>
+          <div class="journey-dest-row">
+            <input type="text" id="journey-dest-name" class="journey-dest-input" placeholder="Destination name (e.g. Home, Office)" autocomplete="off" />
+          </div>
+          <div class="journey-eta-row">
+            <label for="journey-eta-time">Expected arrival:</label>
+            <input type="time" id="journey-eta-time" class="journey-eta-time-input" />
+            <span class="journey-eta-hint" id="journey-eta-hint">optional</span>
+          </div>
+        </div>
+
         <button id="btn-start-journey" class="btn btn--green btn--lg journey-full-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           ▶ Start Journey
@@ -242,12 +260,30 @@
           </div>
         </div>
 
+        <!-- ETA Countdown (shown when ETA was set) -->
+        <div id="journey-eta-active" class="journey-eta-active hidden">
+          <div class="eta-active-row">
+            <span class="eta-label">🕐 ETA:</span>
+            <span id="journey-eta-target" class="eta-target-time">--:--</span>
+            <span class="eta-separator">•</span>
+            <span id="journey-eta-remaining" class="eta-remaining">--:--</span>
+            <span class="eta-remaining-label">left</span>
+          </div>
+          <div id="journey-eta-dest-name" class="eta-dest-name"></div>
+          <div class="eta-progress-bar">
+            <div id="journey-eta-progress" class="eta-progress-fill"></div>
+          </div>
+        </div>
+
         <button id="btn-home-safe" class="btn btn--green btn--lg journey-full-btn">
           ✅ I'm Home Safe
         </button>
-        <button id="btn-pause-journey" class="btn btn--ghost btn--sm journey-full-btn" style="margin-top:8px;">
-          ⏸ Pause Journey
-        </button>
+        <div class="journey-pause-toggle" style="margin-top:8px;">
+          <button id="btn-pause-journey" class="btn btn--amber btn--sm journey-full-btn journey-pause-btn">
+            <span id="pause-btn-icon">⏸</span>
+            <span id="pause-btn-text">Pause Journey</span>
+          </button>
+        </div>
         <button id="btn-share-journey" class="btn btn--blue btn--sm journey-full-btn" style="margin-top:8px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           Share Location
@@ -294,6 +330,51 @@
         <button id="btn-start-checkin" class="btn btn--amber btn--sm">Start Check-in Timer</button>
         <button id="btn-checkin-ok" class="btn btn--green btn--sm hidden">✅ I'm Okay</button>
         <button id="btn-stop-checkin" class="btn btn--ghost btn--sm hidden">Stop Timer</button>
+      </div>
+    </div>
+
+    <!-- Walk-Me-Home (Dead Man's Switch) -->
+    <div class="walk-home-card" id="walk-home-card">
+      <h4>🚶 Walk Me Home</h4>
+      <p class="walk-home-desc">Set a destination & ETA. If you don't arrive — auto-SOS.</p>
+
+      <!-- Setup Panel -->
+      <div id="walk-setup-panel">
+        <div class="walk-dest-row">
+          <input type="text" id="walk-destination" class="walk-dest-input" placeholder="Enter destination…" autocomplete="off" />
+          <button id="btn-search-dest" class="btn btn--blue btn--sm walk-search-btn">🔍</button>
+        </div>
+        <p id="walk-dest-status" class="walk-dest-status">No destination set</p>
+        <div class="walk-eta-row">
+          <label for="walk-eta-slider">ETA:</label>
+          <input type="range" id="walk-eta-slider" min="5" max="120" step="5" value="15" />
+          <span id="walk-eta-val">15 min</span>
+        </div>
+        <button id="btn-start-walk" class="btn btn--green btn--sm walk-full-btn">🚶 Start Walk-Me-Home</button>
+      </div>
+
+      <!-- Active Panel -->
+      <div id="walk-active-panel" class="hidden">
+        <div class="walk-live-row">
+          <span class="walk-live-dot"></span>
+          <span id="walk-countdown" class="walk-countdown-num">15:00</span>
+        </div>
+        <div class="walk-progress-bar">
+          <div id="walk-progress-fill" class="walk-progress-fill"></div>
+        </div>
+        <p id="walk-distance" class="walk-distance-text">Calculating distance…</p>
+        <div class="walk-active-actions">
+          <button id="btn-walk-arrived" class="btn btn--green btn--sm">✅ I've Arrived</button>
+          <button id="btn-cancel-walk" class="btn btn--ghost btn--sm">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Triggered Panel -->
+      <div id="walk-triggered-panel" class="hidden">
+        <div class="walk-triggered-msg">
+          <span class="walk-alert-icon">🚨</span>
+          <p>Time expired! Alerting your emergency contacts…</p>
+        </div>
       </div>
     </div>
   </main>

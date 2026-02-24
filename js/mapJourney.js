@@ -50,6 +50,11 @@ let checkinCountdown = 0;
 let checkinInterval = null;
 let checkinActive = false;
 
+/* ── Journey Destination & ETA State ── */
+let journeyDestName = '';
+let journeyEtaTarget = null;   // Date object for expected arrival
+let etaAlertSent = false;
+
 /* ═══════════════════════════════════════════════
    HAVERSINE DISTANCE (meters)
    ═══════════════════════════════════════════════ */
@@ -346,6 +351,34 @@ export function startJourney() {
   journeyCoords = [];
   totalDistance = 0;
   isDeviated = false;
+  etaAlertSent = false;
+
+  // Read destination name & ETA from inputs
+  const destNameInput = document.getElementById('journey-dest-name');
+  const etaTimeInput = document.getElementById('journey-eta-time');
+  journeyDestName = destNameInput ? destNameInput.value.trim() : '';
+  journeyEtaTarget = null;
+
+  if (etaTimeInput && etaTimeInput.value) {
+    const [hh, mm] = etaTimeInput.value.split(':').map(Number);
+    const now = new Date();
+    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0);
+    // If the target time is before now, assume next day
+    if (target <= now) target.setDate(target.getDate() + 1);
+    journeyEtaTarget = target;
+  }
+
+  // Show ETA card if target was set
+  const etaActiveEl = document.getElementById('journey-eta-active');
+  const etaTargetEl = document.getElementById('journey-eta-target');
+  const etaDestEl = document.getElementById('journey-eta-dest-name');
+  if (journeyEtaTarget && etaActiveEl) {
+    etaActiveEl.classList.remove('hidden');
+    if (etaTargetEl) etaTargetEl.textContent = journeyEtaTarget.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (etaDestEl) etaDestEl.textContent = journeyDestName ? `📍 ${journeyDestName}` : '';
+  } else if (etaActiveEl) {
+    etaActiveEl.classList.add('hidden');
+  }
 
   waypoints.forEach(w => {
     w.reached = false;
@@ -421,6 +454,77 @@ function updateJourneyTimer() {
   const s = (elapsed % 60).toString().padStart(2, '0');
   const durEl = document.getElementById('journey-duration');
   if (durEl) durEl.textContent = `${h}:${m}:${s}`;
+
+  // ETA countdown
+  updateEtaCountdown();
+}
+
+/* ═══════════════════════════════════════════════
+   JOURNEY ETA COUNTDOWN
+   ═══════════════════════════════════════════════ */
+function updateEtaCountdown() {
+  if (!journeyEtaTarget) return;
+
+  const now = new Date();
+  const remainingMs = journeyEtaTarget - now;
+  const remainingEl = document.getElementById('journey-eta-remaining');
+  const progressEl = document.getElementById('journey-eta-progress');
+
+  if (remainingMs <= 0) {
+    // Time expired
+    if (remainingEl) { remainingEl.textContent = 'OVERDUE'; remainingEl.style.color = 'var(--accent-red)'; }
+    if (progressEl) { progressEl.style.width = '100%'; progressEl.style.background = 'var(--accent-red)'; }
+
+    // Send alert once
+    if (!etaAlertSent) {
+      etaAlertSent = true;
+      triggerEtaMissedAlert();
+    }
+    return;
+  }
+
+  const totalSec = Math.ceil(remainingMs / 1000);
+  const hrs = Math.floor(totalSec / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+
+  if (remainingEl) {
+    remainingEl.textContent = hrs > 0
+      ? `${hrs}h ${mins.toString().padStart(2, '0')}m`
+      : `${mins}:${secs.toString().padStart(2, '0')}`;
+
+    // Color changes: green → amber at 25%, red at 10%
+    const totalJourneyMs = journeyEtaTarget - journeyStartTime;
+    const pct = totalJourneyMs > 0 ? (remainingMs / totalJourneyMs) : 1;
+    if (pct <= 0.1) remainingEl.style.color = 'var(--accent-red)';
+    else if (pct <= 0.25) remainingEl.style.color = 'var(--accent-amber)';
+    else remainingEl.style.color = 'var(--accent-green)';
+  }
+
+  // Progress bar
+  if (progressEl) {
+    const totalJourneyMs = journeyEtaTarget - journeyStartTime;
+    const elapsedMs = now - journeyStartTime;
+    const progress = Math.min(100, (elapsedMs / totalJourneyMs) * 100);
+    progressEl.style.width = `${progress}%`;
+    if (progress > 90) progressEl.style.background = 'var(--accent-red)';
+    else if (progress > 75) progressEl.style.background = 'var(--accent-amber)';
+    else progressEl.style.background = 'var(--accent-green)';
+  }
+}
+
+function triggerEtaMissedAlert() {
+  showToast('⚠️ ETA missed! You haven\'t arrived yet — alerting contacts…', 'error');
+  if (navigator.vibrate) navigator.vibrate([800, 200, 800, 200, 800]);
+  sendBrowserNotification('⚠️ ETA Missed',
+    `Expected arrival at ${journeyDestName || 'destination'} has passed. Alerting emergency contacts.`);
+  sendAlert('eta_missed');
+  logEvent('journey_eta_missed', {
+    journey: {
+      destination: journeyDestName || null,
+      etaTarget: journeyEtaTarget.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+  }).catch(() => {});
 }
 
 export function pauseJourney() {
@@ -429,11 +533,14 @@ export function pauseJourney() {
   pauseStart = Date.now();
 
   const pauseBtn = document.getElementById('btn-pause-journey');
+  const iconEl = document.getElementById('pause-btn-icon');
+  const textEl = document.getElementById('pause-btn-text');
   if (pauseBtn) {
-    pauseBtn.textContent = '▶ Resume Journey';
-    pauseBtn.classList.remove('btn--ghost');
-    pauseBtn.classList.add('btn--amber');
+    pauseBtn.classList.remove('btn--amber');
+    pauseBtn.classList.add('btn--green');
   }
+  if (iconEl) iconEl.textContent = '▶';
+  if (textEl) textEl.textContent = 'Resume Journey';
   showToast('Journey paused', 'info');
 }
 
@@ -446,11 +553,14 @@ export function resumeJourney() {
   }
 
   const pauseBtn = document.getElementById('btn-pause-journey');
+  const iconEl = document.getElementById('pause-btn-icon');
+  const textEl = document.getElementById('pause-btn-text');
   if (pauseBtn) {
-    pauseBtn.textContent = '⏸ Pause Journey';
-    pauseBtn.classList.remove('btn--amber');
-    pauseBtn.classList.add('btn--ghost');
+    pauseBtn.classList.remove('btn--green');
+    pauseBtn.classList.add('btn--amber');
   }
+  if (iconEl) iconEl.textContent = '⏸';
+  if (textEl) textEl.textContent = 'Pause Journey';
   showToast('Journey resumed', 'success');
 }
 
@@ -488,6 +598,10 @@ export function stopJourney(reason = 'stopped') {
       : `Tracked ${journeyCoords.length} points over ${distStr}.`;
   }
 
+  // Hide ETA card
+  const etaActiveEl = document.getElementById('journey-eta-active');
+  if (etaActiveEl) etaActiveEl.classList.add('hidden');
+
   setPhaseUI('complete');
 
   updateHeaderStatus('safe', 'Safe');
@@ -500,7 +614,9 @@ export function stopJourney(reason = 'stopped') {
       distance: distStr,
       points: journeyCoords.length,
       duration: durationStr,
-      nodesReached: `${nodesReached}/${waypoints.length}`
+      nodesReached: `${nodesReached}/${waypoints.length}`,
+      destination: journeyDestName || null,
+      etaTarget: journeyEtaTarget ? journeyEtaTarget.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null
     }
   }).catch(() => {});
 }
@@ -515,6 +631,25 @@ function resetToPlanning() {
   journeyCoords = [];
   totalDistance = 0;
   isDeviated = false;
+  journeyDestName = '';
+  journeyEtaTarget = null;
+  etaAlertSent = false;
+
+  // Reset ETA inputs
+  const destInput = document.getElementById('journey-dest-name');
+  const etaInput = document.getElementById('journey-eta-time');
+  const hintEl = document.getElementById('journey-eta-hint');
+  if (destInput) destInput.value = '';
+  if (etaInput) etaInput.value = '';
+  if (hintEl) hintEl.textContent = 'optional';
+
+  // Reset pause button
+  const iconEl = document.getElementById('pause-btn-icon');
+  const textEl = document.getElementById('pause-btn-text');
+  const pauseBtn = document.getElementById('btn-pause-journey');
+  if (iconEl) iconEl.textContent = '⏸';
+  if (textEl) textEl.textContent = 'Pause Journey';
+  if (pauseBtn) { pauseBtn.classList.remove('btn--green'); pauseBtn.classList.add('btn--amber'); }
 
   if (journeyPath) { map.removeLayer(journeyPath); journeyPath = null; }
   clearAllWaypoints();

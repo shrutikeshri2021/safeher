@@ -15,11 +15,47 @@ import { logEvent } from './historyLogger.js';
 let AppState = null;
 export function setAppState(state) { AppState = state; }
 
-/* ──── Distress Keywords ──── */
+/* ──── Distress Keywords ────
+   English + Hindi + Tamil + Telugu + Bengali +
+   Marathi + Gujarati + Kannada + Malayalam
+   Transliterated — SpeechRecognition matches phonetics
+   ──── */
 const DISTRESS_KEYWORDS = [
-  'save me', 'help', 'bachao', 'madad', 'chodo',
-  'help me', 'emergency', 'bachao mujhe', 'chhod do',
-  'leave me', 'let me go', 'stop', 'no no no', 'please stop'
+  /* English */
+  'save me', 'help', 'help me', 'emergency',
+  'leave me', 'let me go', 'stop', 'no no no', 'please stop',
+
+  /* Hindi */
+  'bachao', 'madad', 'chodo', 'bachao mujhe', 'chhod do',
+  'mujhe bachao', 'koi bachao', 'dur hato',
+
+  /* Tamil */
+  'kaappaathungal', 'udavi', 'udavi seiyungal',
+  'vidungal', 'niruthu', 'ennai vittuvidungal', 'thayavu seithu',
+
+  /* Telugu */
+  'kaapaadam', 'sahayam', 'sahayam cheyandi',
+  'vadilandi', 'aapandi', 'nannu vadilandi', 'aagandi',
+
+  /* Bengali */
+  'bachao', 'sahajjo', 'amake bachao',
+  'chere dao', 'thamao', 'amake chere dao', 'dure jao',
+
+  /* Marathi */
+  'vachva', 'vachava', 'madad kara',
+  'sodha', 'thamba', 'mala soda', 'dur vha',
+
+  /* Gujarati */
+  'bachavo', 'madad karo', 'mane bachavo',
+  'chhodo', 'ubha raho', 'mane chhodi do', 'dur jao',
+
+  /* Kannada */
+  'kaapadi', 'sahaya', 'sahaya maadi',
+  'bidi', 'nilisu', 'nannu bidi', 'door hogi',
+
+  /* Malayalam */
+  'rakshikku', 'sahayam', 'sahayikku',
+  'vidoo', 'nilkku', 'enne vidoo', 'enne rakshikku'
 ];
 
 /* ──── Internal state ──── */
@@ -46,6 +82,8 @@ export function start() {
   recognition = new SpeechRec();
   recognition.continuous      = true;
   recognition.interimResults  = true;
+  // en-US works for all transliterated keywords (Hindi, Tamil, etc.)
+  // The engine phonetically approximates non-English words
   recognition.lang            = 'en-US';
 
   shouldRestart = true;

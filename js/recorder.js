@@ -65,6 +65,20 @@ function openDB() {
   });
 }
 
+/* ──── STEP 9: Check permissions before recording ──── */
+async function checkPermissions() {
+  try {
+    const cam = await navigator.permissions.query({ name: 'camera' });
+    const mic = await navigator.permissions.query({ name: 'microphone' });
+    console.log('Camera:', cam.state, 'Mic:', mic.state);
+    if (cam.state === 'denied') throw new Error('Camera permission denied');
+    if (mic.state === 'denied') throw new Error('Mic permission denied');
+  } catch (e) {
+    // permissions API not supported on all browsers, continue anyway
+    if (e.message && e.message.includes('denied')) throw e;
+  }
+}
+
 /* ══════════════════════════════════════════
    startRecording(type)
    Records until YOU manually stop it.
@@ -88,52 +102,64 @@ export async function startRecording(type = 'manual') {
   // SOS / emergency / video → record video; else audio only
   const wantVideo = (type === 'video' || type === 'sos' || type === 'motion' || type === 'voice' || type === 'manual');
 
+  // STEP 9: Check permissions before recording
+  await checkPermissions();
+
   try {
     if (type === 'audio') {
-      // FIX 4: Audio-only stream (no video)
+      // Audio-only stream
       currentStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true },
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          sampleRate: 44100
+        },
         video: false
       });
-    } else if (type === 'video') {
-      // FIX 5: Video with audio, back camera
+    } else {
+      // STEP 1: Single getUserMedia call — video + audio together
       currentStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-        audio: true
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          sampleRate: 44100
+        }
       });
-    } else if (wantVideo) {
-      // Use BACK camera (environment) for SOS/emergency, front for manual video
-      const useBackCamera = (type === 'sos' || type === 'motion' || type === 'voice');
-      const videoConstraints = useBackCamera
-        ? { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
-        : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } };
-      const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: true };
-      currentStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: audioConstraints });
 
-      // If no audio track was returned, request mic separately and merge
-      if (currentStream.getAudioTracks().length === 0) {
-        try {
-          const micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
-          micStream.getAudioTracks().forEach(t => currentStream.addTrack(t));
-        } catch (_) { /* mic unavailable — record video without audio */ }
-      }
+      // Verify both tracks exist
+      const videoTracks = currentStream.getVideoTracks();
+      const audioTracks = currentStream.getAudioTracks();
+      console.log('Video tracks:', videoTracks.length);
+      console.log('Audio tracks:', audioTracks.length);
+      if (audioTracks.length === 0) throw new Error('No microphone access');
+      if (videoTracks.length === 0) throw new Error('No camera access');
 
       // Make sure torch/flashlight is OFF
-      const videoTrack = currentStream.getVideoTracks()[0];
+      const videoTrack = videoTracks[0];
       if (videoTrack) {
         try {
           await videoTrack.applyConstraints({ advanced: [{ torch: false }] });
-        } catch (_) { /* torch not supported — that's fine */ }
+        } catch (_) { /* torch not supported */ }
+      }
+    }
+  } catch (err) {
+    console.error('getUserMedia failed:', err.message);
+    // If video fails, fallback to audio only
+    if (wantVideo) {
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err2) {
+        showToast('Could not access microphone — please allow access', 'error');
+        return;
       }
     } else {
-      // Audio-only fallback for unknown types
-      currentStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true }, video: false });
-    }
-  } catch (_) {
-    // If video fails, fallback to audio
-    try {
-      currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
       showToast('Could not access microphone — please allow access', 'error');
       return;
     }
@@ -145,23 +171,61 @@ export async function startRecording(type = 'manual') {
   recordingStart  = Date.now();
   locationAtStart = await grabGPS();
 
-  const mimeType = pickMime(currentStream);
+  // STEP 2: Get supported MIME type
+  const mimeType = getSupportedMimeType(currentStream);
 
-  mediaRecorder = new MediaRecorder(currentStream, { mimeType });
+  // STEP 3: Create MediaRecorder with bitrate options
+  const recorderOptions = mimeType
+    ? { mimeType, audioBitsPerSecond: 128000, videoBitsPerSecond: 2500000 }
+    : {};
+  try {
+    mediaRecorder = new MediaRecorder(currentStream, recorderOptions);
+  } catch (e) {
+    console.warn('MediaRecorder with options failed, trying without:', e.message);
+    mediaRecorder = new MediaRecorder(currentStream);
+  }
 
+  // STEP 4: Collect chunks
   mediaRecorder.ondataavailable = (e) => {
-    if (e.data.size > 0) recordedChunks.push(e.data);
+    if (e.data && e.data.size > 0) {
+      recordedChunks.push(e.data);
+      console.log('Chunk collected:', e.data.size, 'bytes');
+    }
   };
 
+  // STEP 5: Handle stop and save
   mediaRecorder.onstop = async () => {
-    const blob     = new Blob(recordedChunks, { type: mimeType });
+    console.log('Total chunks:', recordedChunks.length);
+    const totalSize = recordedChunks.reduce((sum, c) => sum + c.size, 0);
+    console.log('Total size:', totalSize, 'bytes');
+
+    if (recordedChunks.length === 0 || totalSize === 0) {
+      console.error('No data recorded');
+      if (currentStream) {
+        currentStream.getTracks().forEach(t => { t.stop(); console.log('Stopped track:', t.kind); });
+        currentStream = null;
+      }
+      currentType = null;
+      currentMediaType = null;
+      if (AppState) AppState.isRecording = false;
+      resetRecordingUI();
+      return;
+    }
+
+    const finalMime = mediaRecorder.mimeType || mimeType || 'video/webm';
+    const blob = new Blob(recordedChunks, { type: finalMime });
+    console.log('Final blob size:', blob.size, 'type:', blob.type);
+
+    // Verify blob is playable
+    const testUrl = URL.createObjectURL(blob);
+    console.log('Test URL created:', testUrl);
+    URL.revokeObjectURL(testUrl);
+
     const duration = Math.round((Date.now() - recordingStart) / 1000);
     const hasVideo = currentStream ? currentStream.getVideoTracks().length > 0 : false;
 
-    // Build a human-readable filename
-    const ts     = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
-    const ext    = hasVideo ? 'webm' : 'webm';
-    const fname  = `SafeHer_${currentType || 'rec'}_${ts}.${ext}`;
+    const ts    = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    const fname = `SafeHer_${currentType || 'rec'}_${ts}.webm`;
 
     const record = {
       timestamp:       Date.now(),
@@ -171,7 +235,7 @@ export async function startRecording(type = 'manual') {
       duration,
       locationAtStart,
       filename:        fname,
-      mimeType
+      mimeType:        finalMime
     };
 
     try {
@@ -179,16 +243,19 @@ export async function startRecording(type = 'manual') {
       await saveRecord(record);
       showToast(`📹 ${fname} saved to device`, 'success');
       logEvent('recording_saved', {
-        media: { hasVideo: hasVideo, hasAudio: true, videoDuration: duration },
+        media: { hasVideo, hasAudio: true, videoDuration: duration },
         trigger: { method: currentType || 'manual' }
       }).catch(() => {});
     } catch (err) {
       showToast('Could not save recording', 'error');
     }
 
-    // Cleanup stream
+    // STEP 7: Stop all tracks ONLY here after recording is fully done
     if (currentStream) {
-      currentStream.getTracks().forEach(t => t.stop());
+      currentStream.getTracks().forEach(track => {
+        track.stop();
+        console.log('Stopped track:', track.kind);
+      });
       currentStream = null;
     }
     currentType = null;
@@ -196,13 +263,14 @@ export async function startRecording(type = 'manual') {
 
     if (AppState) AppState.isRecording = false;
 
-    // Reset UI
     resetRecordingUI();
     renderRecordings();
     updateRecordingBadge();
   };
 
-  mediaRecorder.start(1000);
+  // STEP 6: Use 100ms timeslice for reliable chunk collection
+  mediaRecorder.start(100);
+  console.log('Recording started, state:', mediaRecorder.state);
 
   if (AppState) AppState.isRecording = true;
   showRecordingUI();
@@ -438,6 +506,8 @@ async function playRecordingInline(id) {
       video.src = url;
       video.controls = true;
       video.autoplay = true;
+      video.playsInline = true;    // required for iOS
+      video.muted = false;         // ensure audio plays back
       video.style.cssText = 'width:100%;max-height:200px;border-radius:8px;margin-top:8px;background:#000;';
       slot.appendChild(video);
       activePlayback = video;
@@ -558,18 +628,38 @@ function saveRecord(record) {
   });
 }
 
-function pickMime(stream) {
+/* STEP 2: Find supported MIME type */
+function getSupportedMimeType(stream) {
   const hasVideo = stream.getVideoTracks().length > 0;
   if (hasVideo) {
-    // FIX 5: Prefer vp8,opus for video+audio sync
-    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) return 'video/webm;codecs=vp8,opus';
-    if (MediaRecorder.isTypeSupported('video/webm'))                 return 'video/webm';
-    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) return 'video/webm;codecs=vp9,opus';
-    return 'video/mp4';
+    const types = [
+      'video/webm;codecs=vp8,opus',
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=h264,opus',
+      'video/webm',
+      'video/mp4;codecs=h264,aac',
+      'video/mp4'
+    ];
+    for (const type of types) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        console.log('Using mimeType:', type);
+        return type;
+      }
+    }
+    return '';
   }
-  if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
-  if (MediaRecorder.isTypeSupported('audio/webm'))             return 'audio/webm';
-  return 'audio/mp4';
+  const audioTypes = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4'
+  ];
+  for (const type of audioTypes) {
+    if (MediaRecorder.isTypeSupported(type)) {
+      console.log('Using mimeType:', type);
+      return type;
+    }
+  }
+  return '';
 }
 
 function grabGPS() {
