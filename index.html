@@ -218,19 +218,6 @@
           <button id="btn-clear-waypoints" class="journey-link-btn" type="button">Clear All</button>
         </div>
 
-        <!-- Destination & Expected Arrival Time -->
-        <div class="journey-eta-card">
-          <h4>📍 Destination & ETA</h4>
-          <div class="journey-dest-row">
-            <input type="text" id="journey-dest-name" class="journey-dest-input" placeholder="Destination name (e.g. Home, Office)" autocomplete="off" />
-          </div>
-          <div class="journey-eta-row">
-            <label for="journey-eta-time">Expected arrival:</label>
-            <input type="time" id="journey-eta-time" class="journey-eta-time-input" />
-            <span class="journey-eta-hint" id="journey-eta-hint">optional</span>
-          </div>
-        </div>
-
         <button id="btn-start-journey" class="btn btn--green btn--lg journey-full-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           ▶ Start Journey
@@ -257,21 +244,6 @@
           <div class="stat-item">
             <span class="stat-value" id="journey-speed">0 km/h</span>
             <span class="stat-label">Speed</span>
-          </div>
-        </div>
-
-        <!-- ETA Countdown (shown when ETA was set) -->
-        <div id="journey-eta-active" class="journey-eta-active hidden">
-          <div class="eta-active-row">
-            <span class="eta-label">🕐 ETA:</span>
-            <span id="journey-eta-target" class="eta-target-time">--:--</span>
-            <span class="eta-separator">•</span>
-            <span id="journey-eta-remaining" class="eta-remaining">--:--</span>
-            <span class="eta-remaining-label">left</span>
-          </div>
-          <div id="journey-eta-dest-name" class="eta-dest-name"></div>
-          <div class="eta-progress-bar">
-            <div id="journey-eta-progress" class="eta-progress-fill"></div>
           </div>
         </div>
 
@@ -333,50 +305,6 @@
       </div>
     </div>
 
-    <!-- Walk-Me-Home (Dead Man's Switch) -->
-    <div class="walk-home-card" id="walk-home-card">
-      <h4>🚶 Walk Me Home</h4>
-      <p class="walk-home-desc">Set a destination & ETA. If you don't arrive — auto-SOS.</p>
-
-      <!-- Setup Panel -->
-      <div id="walk-setup-panel">
-        <div class="walk-dest-row">
-          <input type="text" id="walk-destination" class="walk-dest-input" placeholder="Enter destination…" autocomplete="off" />
-          <button id="btn-search-dest" class="btn btn--blue btn--sm walk-search-btn">🔍</button>
-        </div>
-        <p id="walk-dest-status" class="walk-dest-status">No destination set</p>
-        <div class="walk-eta-row">
-          <label for="walk-eta-slider">ETA:</label>
-          <input type="range" id="walk-eta-slider" min="5" max="120" step="5" value="15" />
-          <span id="walk-eta-val">15 min</span>
-        </div>
-        <button id="btn-start-walk" class="btn btn--green btn--sm walk-full-btn">🚶 Start Walk-Me-Home</button>
-      </div>
-
-      <!-- Active Panel -->
-      <div id="walk-active-panel" class="hidden">
-        <div class="walk-live-row">
-          <span class="walk-live-dot"></span>
-          <span id="walk-countdown" class="walk-countdown-num">15:00</span>
-        </div>
-        <div class="walk-progress-bar">
-          <div id="walk-progress-fill" class="walk-progress-fill"></div>
-        </div>
-        <p id="walk-distance" class="walk-distance-text">Calculating distance…</p>
-        <div class="walk-active-actions">
-          <button id="btn-walk-arrived" class="btn btn--green btn--sm">✅ I've Arrived</button>
-          <button id="btn-cancel-walk" class="btn btn--ghost btn--sm">Cancel</button>
-        </div>
-      </div>
-
-      <!-- Triggered Panel -->
-      <div id="walk-triggered-panel" class="hidden">
-        <div class="walk-triggered-msg">
-          <span class="walk-alert-icon">🚨</span>
-          <p>Time expired! Alerting your emergency contacts…</p>
-        </div>
-      </div>
-    </div>
   </main>
 
   <!-- ═══════════════ SCREEN: CONTACTS ═══════════════ -->
@@ -418,30 +346,6 @@
         </div>
       </form>
     </section>
-    <!-- Send Location Section -->
-    <section class="send-location-card" id="send-location-card">
-      <h4>📍 Send My Location</h4>
-      <p class="send-location-desc">Send your current location with a custom message to all saved contacts via SMS or Email.</p>
-      <div class="form-group">
-        <label for="custom-message">Custom Message (optional)</label>
-        <textarea id="custom-message" rows="3" placeholder="I'm heading home now. Here's my live location..."></textarea>
-      </div>
-      <div class="send-actions">
-        <button id="btn-send-sms" class="btn btn--green btn--sm">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Send via SMS
-        </button>
-        <button id="btn-send-email" class="btn btn--blue btn--sm">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Send via Email
-        </button>
-        <button id="btn-send-share" class="btn btn--amber btn--sm">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          Share
-        </button>
-      </div>
-    </section>
-
     <!-- Contact List -->
     <section id="contacts-list" class="contacts-list">
       <div class="empty-state" id="contacts-empty">

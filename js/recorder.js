@@ -85,15 +85,22 @@ async function checkPermissions() {
    No auto-stop timer.
    ══════════════════════════════════════════ */
 export async function startRecording(type = 'manual') {
-  // FIX 4: Guard — same type already recording, do nothing
-  if (mediaRecorder && mediaRecorder.state === 'recording' && currentType === type) return;
-
-  // FIX 4: Stop any active recording before starting a different type
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    await stopRecordingAsync();
+  // Guard — same type already recording, just toggle off
+  if (mediaRecorder && mediaRecorder.state === 'recording' && currentType === type) {
+    stopRecording();
+    return;
   }
 
-  // FIX 4: Clean up any lingering stream
+  // Stop any active recording before starting a different type
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    if (autoStopTimer) { clearTimeout(autoStopTimer); autoStopTimer = null; }
+    // Give browser a tick to finish the stop
+    await new Promise(r => setTimeout(r, 150));
+  }
+
+  // Clean up any lingering stream
   if (currentStream) {
     currentStream.getTracks().forEach(t => t.stop());
     currentStream = null;
@@ -421,26 +428,43 @@ function wireRecorderUI() {
   const videoBtn = document.getElementById('btn-record-video');
   const listEl   = document.getElementById('recordings-list');
 
+  /* ── Debounce flag — prevents double-tap issues ── */
+  let recBusy = false;
+
   if (audioBtn) {
-    audioBtn.addEventListener('click', async () => {
-      // FIX 4: Toggle independently — audio button controls audio only
-      if (isRecording() && currentType === 'audio') {
-        stopRecording();
-      } else {
-        await startRecording('audio');
+    audioBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (recBusy) return;                       // prevent multi-tap while async runs
+      recBusy = true;
+      try {
+        if (isRecording() && currentType === 'audio') {
+          stopRecording();
+        } else {
+          await startRecording('audio');
+        }
+      } finally {
+        recBusy = false;
       }
-    });
+    }, { passive: false });
   }
 
   if (videoBtn) {
-    videoBtn.addEventListener('click', async () => {
-      // FIX 4: Toggle independently — video button controls video only
-      if (isRecording() && currentType === 'video') {
-        stopRecording();
-      } else {
-        await startRecording('video');
+    videoBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (recBusy) return;                       // prevent multi-tap while async runs
+      recBusy = true;
+      try {
+        if (isRecording() && currentType === 'video') {
+          stopRecording();
+        } else {
+          await startRecording('video');
+        }
+      } finally {
+        recBusy = false;
       }
-    });
+    }, { passive: false });
   }
 
   // Delegate play / download / delete

@@ -15,7 +15,6 @@ import { showToast, showFakeCall, hideFakeCall } from './alerts.js';
 import * as history from './history.js';
 import { logEvent } from './historyLogger.js';
 import * as batteryWatch from './batteryWatch.js';
-import * as walkMeHome from './walkMeHome.js';
 
 /* ══════════════════════════════════════════
    SHARED APP STATE
@@ -40,7 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
   voiceDetect.setAppState(AppState);
   recorder.setAppState(AppState);
   batteryWatch.setAppState(AppState);
-  walkMeHome.setAppState(AppState);
 
   /* ── Screen navigation ── */
   initNavigation();
@@ -52,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
   recorder.init();
   history.init();
   batteryWatch.init();
-  walkMeHome.init();
 
   /* ── Log app opened (once per session) ── */
   logEvent('app_opened').catch(() => {});

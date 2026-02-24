@@ -183,9 +183,6 @@ export function initContactsUI() {
     });
   }
 
-  /* ── Send Location buttons ── */
-  wireSendLocationButtons();
-
   /* ── Initial render ── */
   renderContacts();
 }

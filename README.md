@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>A Progressive Web App (PWA) built to keep women safe — anytime, anywhere.</strong><br/>
-  One-tap SOS • Automatic GPS email alerts • Evidence recording • Shake & voice detection (9 languages) • Journey tracking with path deviation & ETA • Walk-Me-Home dead man's switch • Battery-aware emergency • Fake call escape • Full history log • Works offline
+  One-tap SOS • Automatic GPS email alerts • Evidence recording • Shake & voice detection (9 languages) • Journey tracking with path deviation • Battery-aware emergency • Fake call escape • Full history log • Works offline
 </p>
 
 <p align="center">
@@ -50,8 +50,7 @@ SafeHer is not just an SOS button — it is a **complete safety ecosystem** that
 - **Emergency alerting** — automatic GPS + address + snapshot emails to contacts
 - **Evidence collection** — video + audio recording with IndexedDB storage
 - **Smart threat detection** — shake detection + voice keyword recognition in **9 languages**
-- **Journey protection** — waypoint tracking, path deviation detection, ETA countdown, check-in timers
-- **Walk-Me-Home** — destination-aware dead man's switch with auto-SOS on missed arrival
+- **Journey protection** — waypoint tracking, path deviation detection, check-in timers
 - **Battery-aware emergency** — auto-alerts contacts when battery drops to critical levels
 - **Situational escape** — fake incoming call overlay
 - **Full activity history** — every event logged, searchable, filterable, and exportable
@@ -81,8 +80,8 @@ Women face safety threats in everyday life — walking alone at night, commuting
 | No evidence of the incident | **Back camera auto-records** video + audio, stored locally in IndexedDB |
 | Phone snatched or thrown | **Shake detection** auto-triggers alert if phone is aggressively shaken |
 | Can't speak during danger | **Voice detection** listens for distress keywords in 9 Indian languages and auto-triggers SOS |
-| Unsafe during commute | **Journey tracking** with waypoints, path deviation detection, and ETA countdown |
-| Walking alone at night | **Walk-Me-Home** dead man's switch — set destination + ETA, auto-SOS if you don't arrive |
+| Unsafe during commute | **Journey tracking** with waypoints, path deviation detection, and check-in timer |
+| Walking alone at night | **Battery-aware emergency** — auto-alerts contacts at 15%/10%/5% + low-power GPS mode |
 | Phone dying in unsafe area | **Battery-aware emergency** — auto-alerts contacts at 15%/10%/5% + low-power GPS mode |
 | No one checking on you | **Check-in timer** auto-alerts contacts if you don't confirm safety |
 | Need an excuse to leave | **Fake incoming call** overlay that looks like a real phone call |
@@ -156,49 +155,28 @@ Women face safety threats in everyday life — walking alone at night, commuting
 - Continuous listening — auto-restarts when speech recognition ends
 - Uses transliterated keywords — SpeechRecognition engine matches phonetics
 
-### 🗺️ Journey Tracking with Waypoints, Deviation & ETA
+### 🗺️ Journey Tracking with Waypoints & Deviation
 - Built with **Leaflet.js** + **OpenStreetMap** tiles
 - **Waypoint planning** — tap the map to add up to **10 waypoints**
-- **Destination name** — type where you're going (e.g. "Home", "Office")
-- **Expected Arrival Time** — set a time picker; live countdown shows during active tracking
 - Waypoints stored in **localStorage** — persist across sessions
 - **Dashed polyline** connects waypoints on the map
 - Each waypoint has a **50m radius circle** — auto-marked ✅ when entered
 - **3-phase journey UI**:
-  - 🔵 **Planning** — add waypoints, set destination name, set expected arrival time
-  - 🟢 **Active** — live tracking with real-time stats (duration, distance, speed), ETA countdown, pause/resume
+  - 🔵 **Planning** — add waypoints
+  - 🟢 **Active** — live tracking with real-time stats (duration, distance, speed), pause/resume
   - 🏁 **Complete** — summary with total duration, distance, and nodes reached
 - **Path deviation detection** — if you move >150m from planned route:
   - 30-second grace timer before alerting
   - Sends emergency alert to contacts
   - Repeats every 2 minutes while off-route
   - Visual: ✅ On route / ⚠️ Off route with distance
-- **ETA countdown** — live countdown to expected arrival time with color-coded progress bar:
-  - 🟢 Green (on time) → 🟡 Amber (25% left) → 🔴 Red (10% left / overdue)
-  - Auto-alerts contacts when ETA is missed ("OVERDUE" status)
 - **Pause / Resume toggle** — single button switches between ⏸ Pause (amber) and ▶ Resume (green); paused time excluded from duration
 - **Check-in timer** — set 5–60 minute intervals; auto-alerts if you don't tap "I'm Okay"
 - **"I'm Home Safe"** button — ends journey with success summary
 - **Always-on blue dot** with pulsing animation and GPS accuracy circle
 - **Share location** via WhatsApp, Telegram, Email, Outlook, or clipboard
 
-### 🚶 Walk-Me-Home (Dead Man's Switch)
-- **Separate from journey tracking** — a destination-aware safety countdown
-- **Search destination** — type an address, geocoded via Nominatim
-- **Set ETA** — slider from 5 to 120 minutes
-- **Start Walk-Me-Home** → countdown begins with progress bar
-- **Auto-arrival detection** — GPS checks if you're within 100m of destination, auto-confirms
-- **Dead Man's Switch** — if you don't confirm arrival by ETA:
-  - Auto-triggers full SOS emergency
-  - Starts evidence recording
-  - Alerts ALL emergency contacts
-  - Vibration pattern + browser notification
-- **Manual "I've Arrived" button** to confirm safe arrival early
-- **Cancel** button to stop the countdown
-- Three UI states: Setup → Active (with countdown + distance) → Triggered
-- Located on Journey screen below the Check-in Timer card
-
-### 🔋 Battery-Aware Emergency
+###  Battery-Aware Emergency
 - Uses **Battery Status API** (`navigator.getBattery()`)
 - **Three alert thresholds**:
   - **15%** — sends "battery low" alert to all emergency contacts with GPS
@@ -246,7 +224,6 @@ Women face safety threats in everyday life — walking alone at night, commuting
 - Add, edit, and delete contacts
 - Fields: **Name**, **Phone**, **Email**, **Relationship** (Family/Friend/Partner/Colleague/Other)
 - Card-based UI with avatars from initials
-- Send location manually via **SMS**, **Email**, or **WhatsApp** (deep link)
 
 ### 🔔 Smart Alert System
 - **Toast notifications** — non-intrusive status messages (auto-dismiss 3s)
@@ -300,23 +277,20 @@ The main dashboard with everything at your fingertips.
 10. When safe: tap "I'm Safe" or tap SOS button again to deactivate everything
 
 ### Screen 2: Journey
-Full journey tracking with map, waypoints, ETA, and safety features.
+Full journey tracking with map, waypoints, and safety features.
 
 **Planning Phase:**
 1. Tap the map to add waypoints (max 10) — each gets a numbered marker with 50m radius
-2. Enter a **destination name** (optional, e.g. "Home", "Office")
-3. Set **expected arrival time** using the time picker (optional)
-4. Tap "▶ Start Journey"
+2. Tap "▶ Start Journey"
 
 **Active Phase:**
 1. Live blue dot tracks your position on the map
 2. Green polyline draws your actual path
 3. Stats update in real-time: Duration, Distance, Speed
-4. If you set an ETA, a countdown shows: target time, remaining time, progress bar
-5. Waypoints auto-mark ✅ as you pass within 50m
-6. **Path deviation** — if you go >150m off-route, 30s grace period then auto-alerts contacts
-7. **Pause/Resume** — single toggle button: ⏸ Pause (amber) ↔ ▶ Resume (green). Paused time excluded from duration
-8. **Share Location** — opens modal with WhatsApp, Telegram, Email, Outlook, Copy options
+4. Waypoints auto-mark ✅ as you pass within 50m
+5. **Path deviation** — if you go >150m off-route, 30s grace period then auto-alerts contacts
+6. **Pause/Resume** — single toggle button: ⏸ Pause (amber) ↔ ▶ Resume (green). Paused time excluded from duration
+7. **Share Location** — opens modal with WhatsApp, Telegram, Email, Outlook, Copy options
 
 **Complete Phase:**
 - Summary card: total duration, distance, nodes reached (e.g. 8/10)
@@ -328,24 +302,13 @@ Full journey tracking with map, waypoints, ETA, and safety features.
 3. Tap "✅ I'm Okay" to reset timer
 4. If timer expires → auto-alerts all contacts
 
-**Walk-Me-Home (below check-in):**
-1. Search for destination (Nominatim geocoding)
-2. Set ETA with slider (5–120 min)
-3. Tap "🚶 Start Walk-Me-Home"
-4. Countdown with progress bar shows
-5. GPS tracks distance to destination
-6. If within 100m → auto-confirms arrival
-7. If time expires without arrival → triggers full SOS emergency
-8. Manual "✅ I've Arrived" button available
-
 ### Screen 3: Contacts
 Manage your emergency contacts.
 
 1. **Add Contact** form: Name, Phone, Email, Relationship
 2. **Edit/Delete** existing contacts with card UI
-3. **Send My Location** section: type custom message, send via SMS, Email, or Share
-4. Contacts stored in localStorage — no server needed
-5. All contacts with email receive automatic SOS alerts via EmailJS
+3. Contacts stored in localStorage — no server needed
+4. All contacts with email receive automatic SOS alerts via EmailJS
 
 ### Screen 4: Recordings
 Evidence recorder with playback.
@@ -421,9 +384,7 @@ SafeHer/
 │                             ├── SOS button with pulse animation
 │                             ├── Battery badge (green/amber/red states)
 │                             ├── Journey phases (planning/active/complete)
-│                             ├── Journey ETA card + progress bar
 │                             ├── Waypoints, deviation indicators
-│                             ├── Walk-Me-Home card (setup/active/triggered)
 │                             ├── Check-in timer slider & countdown
 │                             ├── History cards, autocomplete dropdown
 │                             ├── Overlay styles (alert, fake call, countdown)
@@ -439,7 +400,7 @@ SafeHer/
 │   │
 │   ├── contacts.js         # Contact CRUD (localStorage), EmailJS auto-email, snapshot
 │   │                         capture & upload, reverse geocoding (Nominatim), live GPS
-│   │                         updates (every 2 min), send location via SMS/Email/Share
+│   │                         updates (every 2 min)
 │   │
 │   ├── sosButton.js        # SOS button hold/tap logic, activate/deactivate SOS,
 │   │                         minimize overlay + SOS active pill, safe mode disable
@@ -449,20 +410,14 @@ SafeHer/
 │   │                         IndexedDB storage, stream guard, inline playback, download
 │   │
 │   ├── mapJourney.js       # Leaflet map, blue dot, waypoint CRUD (max 10, localStorage),
-│   │                         3-phase journey (planning/active/complete), destination name
-│   │                         + expected arrival time with countdown, waypoint proximity
+│   │                         3-phase journey (planning/active/complete), waypoint proximity
 │   │                         (50m), path deviation (150m, 30s timer, 2min repeat),
-│   │                         ETA missed alert, pause/resume toggle, check-in timer
+│   │                         pause/resume toggle, check-in timer
 │   │                         (5–60 min), Haversine distance, share location modal
 │   │
 │   ├── batteryWatch.js     # Battery Status API monitoring, 3 thresholds (15%/10%/5%),
 │   │                         auto-alert to contacts with GPS, low-power GPS mode at 10%,
 │   │                         battery badge UI updater, charging reset, background GPS cache
-│   │
-│   ├── walkMeHome.js       # Walk-Me-Home dead man's switch, Nominatim destination search,
-│   │                         ETA slider (5–120 min), countdown timer + progress bar,
-│   │                         GPS proximity check (100m auto-arrive), auto-SOS on timeout,
-│   │                         manual arrival confirm, cancel, 3 UI states
 │   │
 │   ├── safeMode.js         # Safe mode toggle (localStorage), sensor start/stop,
 │   │                         SOS button disable
@@ -572,8 +527,6 @@ SafeHer/
   ┌─────────────────────────────────────────────────────┐
   │              PHASE 1: PLANNING                       │
   │  • Tap map to add waypoints (max 10)                │
-  │  • Enter destination name (optional)                │
-  │  • Set expected arrival time (optional)             │
   │  • Waypoints saved to localStorage                  │
   │  • Dashed polyline connects nodes                   │
   └──────────────────────┬──────────────────────────────┘
@@ -586,7 +539,6 @@ SafeHer/
   │         │                                           │
   │         ├──▶ Update blue dot + path polyline        │
   │         ├──▶ Update stats (duration, distance, speed)│
-  │         ├──▶ Update ETA countdown + progress bar    │
   │         ├──▶ Check waypoint proximity (50m radius)  │
   │         │      └── Mark reached ✅ + vibrate         │
   │         └──▶ Check path deviation (150m threshold)  │
@@ -595,53 +547,18 @@ SafeHer/
   │                └── OFF ROUTE: ⚠️ indicator          │
   │                       └── 30s grace → alert → repeat│
   │                                                     │
-  │  ETA COUNTDOWN (if set):                            │
-  │    Green ──▶ Amber (25% left) ──▶ Red (10%)         │
-  │    Time expires → "OVERDUE" → alert contacts        │
-  │                                                     │
   │  ⏸ Pause ↔ ▶ Resume  |  📍 Share Location          │
   └──────────────────────┬──────────────────────────────┘
                          │ "I'm Home Safe" or manual stop
                          ▼
   ┌─────────────────────────────────────────────────────┐
   │              PHASE 3: COMPLETE                       │
-  │  • Summary: duration, distance, nodes, destination  │
+  │  • Summary: duration, distance, nodes reached       │
   │  • "Plan New Journey" resets to Phase 1             │
   │  • Event logged to history                          │
   └─────────────────────────────────────────────────────┘
 ```
 
-### 🚶 Walk-Me-Home Flow
-
-```
-  ┌─────────────────────────────────────────────────┐
-  │  1. Search destination (Nominatim geocoding)    │
-  │  2. Set ETA via slider (5–120 min)              │
-  │  3. Tap "Start Walk-Me-Home"                    │
-  └────────────────────┬────────────────────────────┘
-                       │
-                       ▼
-  ┌──────────────────────────────────────────────────┐
-  │  ACTIVE: Countdown running + GPS tracking        │
-  │  • Progress bar fills over time                  │
-  │  • Distance to destination shown                 │
-  │  • Warning color at 20% remaining                │
-  │                                                  │
-  │  Option A: Within 100m ──▶ AUTO-ARRIVE ✅        │
-  │  Option B: Tap "I've Arrived" ──▶ SAFE ✅        │
-  │  Option C: Tap "Cancel" ──▶ CANCELLED            │
-  │  Option D: Timer expires ──▶ DEAD MAN SWITCH 🚨  │
-  └──────────────────────────────────────────────────┘
-                       │ (Option D)
-                       ▼
-  ┌──────────────────────────────────────────────────┐
-  │  🚨 AUTO-SOS TRIGGERED                           │
-  │  • Start evidence recording                      │
-  │  • Send emergency alert to ALL contacts          │
-  │  • Vibration + browser notification              │
-  │  • "Time expired! Alerting contacts…" message    │
-  └──────────────────────────────────────────────────┘
-```
 
 ### 🔋 Battery-Aware Flow
 
@@ -664,7 +581,7 @@ SafeHer/
                            │   app.js    │  (Entry Point)
                            │  AppState   │  (Shared State)
                            └──────┬──────┘
-                                  │ setAppState() → 9 modules
+                                  │ setAppState() → 8 modules
           ┌──────────┬────────────┼────────────┬──────────┐
           │          │            │            │          │
    ┌──────┴──────┐  │   ┌───────┴────────┐   │   ┌──────┴──────┐
@@ -672,14 +589,13 @@ SafeHer/
    │ • Hold/tap  │  │   │  • Map + dots   │   │   │ • 3 levels  │
    │ • Minimize  │  │   │  • Waypoints    │   │   │ • Low-power │
    │ • Safe mode │  │   │  • Deviation    │   │   │ • Badge UI  │
-   └─────────────┘  │   │  • ETA countdown│   │   └─────────────┘
-                    │   │  • Pause/Resume │   │
-   ┌────────────┐   │   │  • Check-in     │   │   ┌─────────────┐
-   │ safeMode   │   │   └────────────────┘   │   │ walkMeHome  │
-   │ • Toggle   │   │                        │   │ • Destination│
-   │ • Sensors  │   │                        │   │ • Dead man's│
-   └────────────┘   │                        │   │ • Auto-SOS  │
-                    │                        │   └─────────────┘
+   └─────────────┘  │   │  • Pause/Resume │   │   └─────────────┘
+                    │   │  • Check-in     │   │
+   ┌────────────┐   │   └────────────────┘   │
+   │ safeMode   │   │                        │
+   │ • Toggle   │   │                        │
+   │ • Sensors  │   │                        │
+   └────────────┘   │                        │
    ┌────────────┐   │                        │
    │motionDetect│   │   ┌────────────────┐   │
    │• Shake 20  │   │   │  voiceDetect   │   │
@@ -776,13 +692,9 @@ SafeHer/
 ### Step 16: Battery-Aware Emergency
 - Battery Status API monitoring, 3 alert thresholds (15%/10%/5%), low-power GPS mode, header battery badge, charging reset
 
-### Step 17: Walk-Me-Home Dead Man's Switch
-- Destination search (Nominatim), ETA slider, countdown + progress bar, GPS proximity auto-arrival (100m), auto-SOS on timeout, 3 UI states
-
-### Step 18: Journey Destination & ETA
-- Added destination name input and expected arrival time picker in planning phase
-- ETA countdown with color-coded progress bar during active tracking
-- Auto-alerts contacts when ETA is missed ("OVERDUE")
+### Step 17: Feature Cleanup & Recording Fix
+- Removed Walk-Me-Home dead man's switch, Destination & ETA, and Send My Location features
+- Fixed single-tap recording (debounce flag, preventDefault, simplified stop guard)
 - Improved pause/resume as a clear toggle button (⏸ Pause amber ↔ ▶ Resume green)
 
 ---
@@ -824,29 +736,13 @@ SafeHer/
 5. Background GPS cache: always stores last known position for instant alert delivery
 6. Charging: resets all flags so alerts fire again on next discharge cycle
 
-### Walk-Me-Home Dead Man's Switch
-1. Destination geocoded via Nominatim API (search by address name)
-2. User selects ETA (5–120 min via slider)
-3. Countdown timer with progress bar, GPS watches user's position
-4. Distance to destination calculated via Haversine
-5. If within 100m → auto-confirm arrival
-6. If timer hits zero without confirmation → trigger full SOS: recording, email alerts, notification, vibration
-
-### Journey ETA System
-1. Planning: user sets expected arrival time via `<input type="time">`
-2. If target time is before current time → assumes next day
-3. Active: countdown shows remaining time with color transitions (green→amber→red)
-4. Progress bar fills based on elapsed vs total journey time
-5. When time expires → "OVERDUE" label + auto-alert to all contacts via `sendAlert('eta_missed')`
-6. Event logged to history as `journey_eta_missed`
-
 ### Pause / Resume Journey
 1. Single toggle button: ⏸ Pause (amber) ↔ ▶ Resume (green)
 2. When paused: `journeyPaused = true`, `pauseStart = Date.now()`
 3. GPS updates are ignored while paused (`if (journeyPaused) return`)
 4. When resumed: `pausedDuration += Date.now() - pauseStart`
 5. Duration calculation subtracts total paused time: `elapsed = now - start - pausedDuration`
-6. All timers (journey, ETA) continue displaying but GPS tracking pauses
+6. Journey timer continues displaying but GPS tracking pauses
 
 ---
 
