@@ -352,6 +352,19 @@ export async function deleteRecording(id) {
   });
 }
 
+/* ══════════════════════════════════════════
+   deleteAllRecordings()  — clears entire store
+   ══════════════════════════════════════════ */
+export async function deleteAllRecordings() {
+  if (!db) db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror    = () => reject(tx.error);
+  });
+}
+
 export function isRecording() {
   return !!(mediaRecorder && mediaRecorder.state === 'recording');
 }
@@ -362,8 +375,9 @@ export function isRecording() {
    download, delete
    ══════════════════════════════════════════ */
 export async function renderRecordings() {
-  const listEl  = document.getElementById('recordings-list');
-  const emptyEl = document.getElementById('recordings-empty');
+  const listEl    = document.getElementById('recordings-list');
+  const emptyEl   = document.getElementById('recordings-empty');
+  const clearBtn  = document.getElementById('btn-clear-all-recordings');
   if (!listEl) return;
 
   let recordings = [];
@@ -380,10 +394,12 @@ export async function renderRecordings() {
 
   if (recordings.length === 0) {
     if (emptyEl) emptyEl.classList.remove('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
     updateRecordingBadge(0);
     return;
   }
   if (emptyEl) emptyEl.classList.add('hidden');
+  if (clearBtn) clearBtn.classList.remove('hidden');
   updateRecordingBadge(recordings.length);
 
   recordings.forEach(rec => {
@@ -465,6 +481,25 @@ function wireRecorderUI() {
         recBusy = false;
       }
     }, { passive: false });
+  }
+
+  /* ── Clear All button ── */
+  const clearAllBtn = document.getElementById('btn-clear-all-recordings');
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const ok = confirm('Delete ALL recordings? This cannot be undone.');
+      if (!ok) return;
+      try {
+        await deleteAllRecordings();
+        await renderRecordings();
+        showToast('All recordings cleared', 'info');
+      } catch (err) {
+        console.error('Clear all failed:', err);
+        showToast('Failed to clear recordings', 'error');
+      }
+    });
   }
 
   // Delegate play / download / delete

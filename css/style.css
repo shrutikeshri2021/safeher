@@ -1052,10 +1052,23 @@ body {
   animation: recording 1.2s infinite;
 }
 
+.recordings-list-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
 .recordings-list-section h4 {
   font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
-  margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.3px;
+  margin-bottom: 0; text-transform: uppercase; letter-spacing: 0.3px;
 }
+.btn-clear-all {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(239, 68, 68, 0.12); color: var(--accent-red);
+  border: 1px solid rgba(239, 68, 68, 0.25); border-radius: var(--radius-sm);
+  padding: 5px 12px; font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; transition: background 0.2s, border-color 0.2s;
+}
+.btn-clear-all:active { background: rgba(239, 68, 68, 0.25); }
+.btn-clear-all.hidden { display: none; }
 .recording-card {
   display: flex; align-items: center; gap: 12px;
   background: var(--bg-card);

@@ -386,7 +386,13 @@
       </button>
     </section>
     <section class="recordings-list-section">
-      <h4>Saved Recordings</h4>
+      <div class="recordings-list-header">
+        <h4>Saved Recordings</h4>
+        <button id="btn-clear-all-recordings" class="btn-clear-all hidden" aria-label="Clear all recordings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Clear All
+        </button>
+      </div>
       <div id="recordings-list" class="recordings-list">
         <div class="empty-state" id="recordings-empty">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
