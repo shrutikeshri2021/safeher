@@ -54,6 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ── Theme (light / dark) ── */
   initTheme();
 
+  /* ── Micro-interactions (ripple, haptics, scroll reveal) ── */
+  initMicroInteractions();
+
   /* ── Log app opened (once per session) ── */
   logEvent('app_opened').catch(() => {});
 
@@ -226,5 +229,59 @@ function applyTheme(theme) {
   const knob = document.getElementById('theme-knob');
   const meta = document.querySelector('meta[name="theme-color"]');
   if (knob) knob.textContent = theme === 'light' ? '☀️' : '🌙';
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#F2F4F8' : '#0B0F1A');
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#F7F0FF' : '#070B14');
+}
+
+/* ══════════════════════════════════════════
+   MICRO-INTERACTIONS
+   Button haptics + ripple + scroll reveal
+   ══════════════════════════════════════════ */
+function initMicroInteractions() {
+  /* Haptic feedback on all buttons */
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button, .action-card, .record-btn, .hist-chip, .nav-btn');
+    if (btn && navigator.vibrate) navigator.vibrate(6);
+  });
+
+  /* Ripple effect on buttons */
+  document.addEventListener('pointerdown', (e) => {
+    const btn = e.target.closest('.btn, .action-card, .nav-btn, .record-btn');
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.style.cssText = `
+      position:absolute; border-radius:50%;
+      background:rgba(255,255,255,0.18);
+      width:20px; height:20px;
+      left:${e.clientX - rect.left}px;
+      top:${e.clientY - rect.top}px;
+      pointer-events:none;
+      animation: ripple 0.5s ease-out forwards;
+    `;
+    btn.style.position = btn.style.position || 'relative';
+    btn.style.overflow = 'hidden';
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 550);
+  });
+
+  /* Scroll reveal for cards */
+  if ('IntersectionObserver' in window) {
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          entry.target.style.animation = `scrollReveal 0.5s ${i * 80}ms cubic-bezier(0.34,1.56,0.64,1) forwards`;
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    /* Observe cards after short delay to let DOM settle */
+    setTimeout(() => {
+      document.querySelectorAll('.feature-card, .contact-card, .recording-card, .hist-event-card, .stat-item, .waypoint-item').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px)';
+        revealObserver.observe(el);
+      });
+    }, 300);
+  }
 }

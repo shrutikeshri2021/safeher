@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <meta name="theme-color" content="#0B0F1A" />
+  <meta name="theme-color" content="#070B14" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="SafeHer" />
@@ -14,7 +14,7 @@
   <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="css/style.css" />
   <title>SafeHer</title>
@@ -63,11 +63,12 @@
 
     <!-- SOS Button -->
     <section class="sos-section">
-      <p class="sos-label">Hold for 3 seconds to trigger SOS</p>
+      <p class="sos-label">Hold for 2 seconds to trigger SOS</p>
       <div class="sos-ring">
         <div class="sos-ring-pulse"></div>
-        <button id="btn-sos" class="sos-button" aria-label="Emergency SOS — hold for 3 seconds">
+        <button id="btn-sos" class="sos-button" aria-label="Emergency SOS — hold for 2 seconds">
           <span class="sos-text">SOS</span>
+          <span class="sos-hold-hint">HOLD 2 SEC</span>
         </button>
       </div>
       <p class="sos-sublabel">Emergency alert will be sent to your contacts</p>
