@@ -265,15 +265,26 @@ function renderWaypointList() {
     return;
   }
 
-  listEl.innerHTML = waypoints.map((w, i) => `
+  listEl.innerHTML = waypoints.map((w, i) => {
+    let arrivalHtml = '';
+    if (w.reached && w.arrivalLat != null && w.arrivalLng != null) {
+      const t = w.arrivedAt ? new Date(w.arrivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const mapsUrl = `https://www.google.com/maps?q=${w.arrivalLat},${w.arrivalLng}`;
+      arrivalHtml = `<div class="waypoint-arrival">📍 <a href="${mapsUrl}" target="_blank" rel="noopener">${w.arrivalLat.toFixed(5)}, ${w.arrivalLng.toFixed(5)}</a>${t ? ` · ${t}` : ''}</div>`;
+    }
+    return `
     <div class="waypoint-item${w.reached ? ' waypoint-reached' : ''}" data-id="${w.id}">
       <span class="waypoint-num">${i + 1}</span>
-      <span class="waypoint-label">${w.label}</span>
-      <span class="waypoint-coords">${w.lat.toFixed(4)}, ${w.lng.toFixed(4)}</span>
+      <div class="waypoint-details">
+        <span class="waypoint-label">${w.label}</span>
+        <span class="waypoint-coords">${w.lat.toFixed(4)}, ${w.lng.toFixed(4)}</span>
+        ${arrivalHtml}
+      </div>
       ${journeyPhase === 'planning' ? `<button class="waypoint-remove" data-id="${w.id}">✕</button>` : ''}
       ${w.reached ? '<span class="waypoint-check">✅</span>' : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   listEl.querySelectorAll('.waypoint-remove').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -286,7 +297,10 @@ function renderWaypointList() {
 function saveWaypoints() {
   const data = waypoints.map(w => ({
     id: w.id, lat: w.lat, lng: w.lng,
-    label: w.label, radius: w.radius, reached: w.reached
+    label: w.label, radius: w.radius, reached: w.reached,
+    arrivedAt: w.arrivedAt || null,
+    arrivalLat: w.arrivalLat ?? null,
+    arrivalLng: w.arrivalLng ?? null
   }));
   localStorage.setItem(WAYPOINT_STORAGE_KEY, JSON.stringify(data));
 }
@@ -550,12 +564,22 @@ function checkWaypointProximity(lat, lng) {
     const dist = haversineDistance(lat, lng, w.lat, w.lng);
     if (dist <= w.radius) {
       w.reached = true;
+      w.arrivedAt = Date.now();
+      w.arrivalLat = lat;
+      w.arrivalLng = lng;
       anyReached = true;
       reachedCount++;
       if (w.marker) w.marker.setIcon(createWaypointIcon('✓', true));
       if (w.circle) w.circle.setStyle({ color: '#34C759', fillColor: '#34C759' });
-      showToast(`✅ ${w.label} reached!`, 'success');
+      showToast(`✅ Reached ${w.label}`, 'success');
+      sendBrowserNotification(`✅ ${w.label} reached!`,
+        `Arrived at ${lat.toFixed(5)}, ${lng.toFixed(5)} — ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      logEvent('waypoint_reached', {
+        node: w.label,
+        arrivalCoords: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+        arrivalTime: new Date().toISOString()
+      }).catch(() => {});
     }
   });
 
@@ -564,7 +588,10 @@ function checkWaypointProximity(lat, lng) {
     statusEl.textContent = `Node ${reachedCount}/${waypoints.length} reached ${reachedCount > 0 ? '✅' : ''}`;
   }
 
-  if (anyReached) saveWaypoints();
+  if (anyReached) {
+    saveWaypoints();
+    renderWaypointList();   // re-render to show arrival info
+  }
 
   if (reachedCount === waypoints.length && waypoints.length > 0) {
     showToast('🎉 All waypoints reached!', 'success');
@@ -760,6 +787,7 @@ function wireJourneyButtons() {
   const shareBtn = document.getElementById('btn-share-journey');
   const clearBtn = document.getElementById('btn-clear-waypoints');
   const newBtn = document.getElementById('btn-new-journey');
+  const recenterBtn = document.getElementById('btn-recenter');
 
   if (startBtn) startBtn.addEventListener('click', startJourney);
   if (homeSafeBtn) homeSafeBtn.addEventListener('click', () => stopJourney('home_safe'));
@@ -767,6 +795,30 @@ function wireJourneyButtons() {
   if (shareBtn) shareBtn.addEventListener('click', () => shareLocation());
   if (clearBtn) clearBtn.addEventListener('click', () => { if (waypoints.length > 0 && confirm('Clear all waypoints?')) clearAllWaypoints(); });
   if (newBtn) newBtn.addEventListener('click', resetToPlanning);
+
+  /* ── Recenter button ── */
+  if (recenterBtn) {
+    recenterBtn.addEventListener('click', () => {
+      if (!currentPosition) {
+        showToast('Getting your location…', 'info');
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+            currentPosition = { lat, lng };
+            updateUserPosition(lat, lng, accuracy);
+            map.setView([lat, lng], 17, { animate: true, duration: 0.5 });
+          },
+          () => showToast('Could not get location — enable GPS', 'warning'),
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      } else {
+        map.setView([currentPosition.lat, currentPosition.lng], 17, { animate: true, duration: 0.5 });
+      }
+      /* Pulse animation feedback */
+      recenterBtn.classList.add('recentering');
+      recenterBtn.addEventListener('animationend', () => recenterBtn.classList.remove('recentering'), { once: true });
+    });
+  }
 }
 
 function wireCheckinButtons() {

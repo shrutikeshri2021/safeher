@@ -513,13 +513,49 @@ body {
 }
 
 /* Map Container */
+.map-wrap {
+  position: relative;
+  margin-bottom: 14px;
+}
 #map-container {
   width: 100%; height: 50vh; min-height: 220px; max-height: 400px;
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
-  margin-bottom: 14px;
+}
+
+/* Recenter button */
+.btn-recenter {
+  position: absolute; bottom: 14px; right: 14px; z-index: 1000;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  color: var(--accent-blue); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.btn-recenter:active {
+  transform: scale(0.9);
+  background: var(--accent-blue); color: #fff;
+}
+.btn-recenter.recentering {
+  animation: recenterPulse 0.6s ease;
+}
+@keyframes recenterPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(10,132,255,0.5); }
+  70%  { box-shadow: 0 0 0 12px rgba(10,132,255,0); }
+  100% { box-shadow: 0 2px 10px rgba(0,0,0,0.35); }
+}
+
+/* Waypoint arrival info */
+.waypoint-arrival {
+  font-size: 0.6rem; color: var(--accent-green);
+  margin-top: 2px; display: flex; align-items: center; gap: 4px;
+}
+.waypoint-arrival a {
+  color: var(--accent-green); text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* Live location pulsing dot */
@@ -575,8 +611,11 @@ body {
 .waypoint-reached .waypoint-num {
   background: var(--accent-green);
 }
+.waypoint-details {
+  display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0;
+}
 .waypoint-label {
-  font-size: 0.85rem; font-weight: 600; flex: 1;
+  font-size: 0.85rem; font-weight: 600;
 }
 .waypoint-coords {
   font-size: 0.65rem; color: var(--text-secondary);
