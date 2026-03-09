@@ -5,8 +5,8 @@
    ═══════════════════════════════════════════════ */
 
 import { showToast, updateHeaderStatus, updateStatusCard, sendAlert, sendBrowserNotification } from './alerts.js';
-import { sendAlertToContacts } from './contacts.js';
 import { logEvent } from './historyLogger.js';
+import * as WakeLock from './wakeLock.js';
 
 /* global L */
 
@@ -109,6 +109,12 @@ export function initMap() {
     zoomControl: true,
     attributionControl: true
   });
+
+  /* Save map reference globally for CommunityMap, SafeRoute etc. */
+  window.safeherMap = map;
+  window._leafletMap = map;
+  if (window.AppState) window.AppState.map = map;
+  console.log('[Map] ✅ Map reference saved globally');
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap',
@@ -374,6 +380,9 @@ export function startJourney() {
 
   setPhaseUI('active');
 
+  // --- Wake Lock (Feature 1) — keep screen on during journey ---
+  WakeLock.acquire('journey').catch(err => console.warn('[Journey] Wake lock acquire failed:', err));
+
   updateHeaderStatus('journey', 'Journey');
   updateStatusCard('journey', 'Journey Active', 'Your path is being recorded in real-time.');
 
@@ -509,6 +518,9 @@ export function stopJourney(reason = 'stopped') {
   }
 
   setPhaseUI('complete');
+
+  // --- Release Wake Lock (Feature 1) ---
+  WakeLock.release('journey').catch(err => console.warn('[Journey] Wake lock release failed:', err));
 
   updateHeaderStatus('safe', 'Safe');
   updateStatusCard('safe', "You're Safe", 'All systems normal. Stay alert, stay safe.');
@@ -947,4 +959,9 @@ export function refreshMap() {
 
 export function isJourneyActive() {
   return journeyActive;
+}
+
+/** getMapInstance — expose Leaflet map for external modules (e.g. geofence) */
+export function getMapInstance() {
+  return map;
 }

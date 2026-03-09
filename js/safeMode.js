@@ -6,6 +6,8 @@
 import { showToast, updateHeaderStatus, updateStatusCard } from './alerts.js';
 import * as motionDetect from './motionDetect.js';
 import * as voiceDetect from './voiceDetect.js';
+import * as ambientLight from './ambientLight.js';
+import * as geofence from './geofence.js';
 import { logEvent } from './historyLogger.js';
 import { updateSOSDisabledState } from './sosButton.js';
 
@@ -52,14 +54,18 @@ function enableSafeMode(silent = false) {
   if (AppState) AppState.safeMode = true;
   localStorage.setItem('safeher_safemode', 'true');
 
-  // --- Stop sensors ---
+  // --- Stop ALL sensors ---
   motionDetect.stop();
   voiceDetect.stop();
+  ambientLight.stop();
+  geofence.stopMonitoring();
   stopGeolocation();
 
-  // Uncheck motion & voice toggles in UI
+  // Uncheck all sensor toggles in UI
   setToggle('toggle-motion', false);
   setToggle('toggle-voice', false);
+  setToggle('toggle-darkness', false);
+  setToggle('toggle-geofence', false);
 
   // --- Update UI ---
   updateHeaderStatus('safe', "You're Safe 🏠");
@@ -82,16 +88,21 @@ function disableSafeMode(silent = false) {
   if (AppState) AppState.safeMode = false;
   localStorage.setItem('safeher_safemode', 'false');
 
-  // --- Start sensors ---
+  // --- Start ALL sensors (shake + crash, voice, darkness, geofence) ---
   motionDetect.start();
   voiceDetect.start();
+  ambientLight.start();
+  geofence.startMonitoring();
 
+  // Check all sensor toggles in UI
   setToggle('toggle-motion', true);
   setToggle('toggle-voice', true);
+  setToggle('toggle-darkness', true);
+  setToggle('toggle-geofence', true);
 
   // --- Update UI ---
   updateHeaderStatus('watching', 'Stay Alert 🚶‍♀️');
-  updateStatusCard('watching', 'Stay Alert 🚶‍♀️', 'Motion & voice detection active. Stay safe!');
+  updateStatusCard('watching', 'Stay Alert 🚶‍♀️', 'All sensors active — shake, darkness & unsafe zone detection ON.');
   updateSOSDisabledState(false);
 
   if (!silent) showToast('Stay Alert — All sensors active', 'warning');

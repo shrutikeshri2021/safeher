@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SafeHer — Live Watch</title>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A0E1A; color: #fff;
+      font-family: 'Outfit', system-ui, sans-serif;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 12px; }
+    .status { color: #FFB800; margin-bottom: 20px; font-size: 0.9rem; }
+    .status.connected { color: #00FF88; }
+    video {
+      width: 100%; max-width: 640px;
+      border-radius: 12px; background: #111;
+    }
+    .info { margin-top: 16px; font-size: 0.85rem; color: #888; }
+  </style>
+</head>
+<body>
+  <h1>🔴 SafeHer Live Watch</h1>
+  <p class="status" id="watch-status">Connecting to stream…</p>
+  <video id="remote-video" autoplay playsinline></video>
+  <p class="info" id="watch-info"></p>
+
+  <script>
+    (function () {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const remotePeerId = params.get('id');
+        const statusEl = document.getElementById('watch-status');
+        const videoEl = document.getElementById('remote-video');
+        const infoEl = document.getElementById('watch-info');
+
+        if (!remotePeerId) {
+          statusEl.textContent = '⚠️ No stream ID provided in URL';
+          return;
+        }
+
+        console.log('[Watch] Connecting to peer:', remotePeerId);
+        statusEl.textContent = 'Connecting to ' + remotePeerId + '…';
+
+        const peer = new Peer();
+
+        peer.on('open', (myId) => {
+          console.log('[Watch] My Peer ID:', myId);
+
+          /* Create a tiny dummy stream to initiate the call */
+          const canvas = document.createElement('canvas');
+          canvas.width = 1; canvas.height = 1;
+          const dummyStream = canvas.captureStream(0);
+
+          const call = peer.call(remotePeerId, dummyStream);
+
+          call.on('stream', (remoteStream) => {
+            console.log('[Watch] ✅ Receiving stream');
+            videoEl.srcObject = remoteStream;
+            statusEl.textContent = '🔴 LIVE — Watching stream';
+            statusEl.className = 'status connected';
+            infoEl.textContent = 'Connected at ' + new Date().toLocaleTimeString();
+          });
+
+          call.on('close', () => {
+            statusEl.textContent = '⚫ Stream ended';
+            statusEl.className = 'status';
+          });
+
+          call.on('error', (err) => {
+            console.error('[Watch] Call error:', err);
+            statusEl.textContent = '⚠️ Connection error';
+          });
+        });
+
+        peer.on('error', (err) => {
+          console.error('[Watch] Peer error:', err);
+          statusEl.textContent = '⚠️ Failed to connect: ' + err.type;
+        });
+
+      } catch (err) {
+        console.error('[Watch] Fatal error:', err);
+        document.getElementById('watch-status').textContent = '⚠️ Error: ' + err.message;
+      }
+    })();
+  </script>
+</body>
+</html>

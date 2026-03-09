@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <meta name="theme-color" content="#070B14" />
+  <meta name="theme-color" content="#0A0E1A" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="SafeHer" />
@@ -17,6 +17,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/features.css" />
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <title>SafeHer</title>
 </head>
 <body>
@@ -38,6 +40,13 @@
       <button class="header-theme-btn" id="btn-theme-toggle" aria-label="Toggle light/dark mode">
         <span class="header-theme-knob" id="theme-knob">🌙</span>
       </button>
+      <div class="lang-picker-wrap">
+        <select id="lang-picker" aria-label="Language">
+          <option value="en">EN</option>
+          <option value="hi">हि</option>
+          <option value="te">తె</option>
+        </select>
+      </div>
       <div id="status-indicator" class="status-badge status-safe">
         <span class="status-dot"></span>
         <span class="status-text">Safe</span>
@@ -114,7 +123,12 @@
               <line x1="12" y1="2" x2="12" y2="4"/>
             </svg>
           </div>
-          <span>Siren</span>
+          <span data-i18n="siren">Siren</span>
+        </button>
+        <!-- Live Stream Button (Feature 12) -->
+        <button id="btn-live-stream" class="action-card" data-action="live-stream">
+          <div class="action-icon action-icon--red">📹</div>
+          <span data-i18n="live_stream">Live Stream</span>
         </button>
       </div>
     </section>
@@ -193,6 +207,145 @@
           <input type="checkbox" id="toggle-voice" />
           <span class="toggle-slider"></span>
         </label>
+      </div>
+
+      <!-- Darkness Detection (Feature 2: Ambient Light Sensor) -->
+      <div class="feature-card" id="feature-darkness">
+        <div class="feature-info">
+          <div class="feature-icon feature-icon--purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Darkness Detection</h4>
+            <p id="darkness-status">Off — Detects dark environments</p>
+          </div>
+        </div>
+        <label class="toggle" for="toggle-darkness">
+          <input type="checkbox" id="toggle-darkness" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- Geo-fence Detection -->
+      <div class="feature-card" id="feature-geofence">
+        <div class="feature-info">
+          <div class="feature-icon feature-icon--red">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Unsafe Zone Alerts</h4>
+            <p id="geofence-status">Off — Enable to get alerts near unsafe zones</p>
+          </div>
+        </div>
+        <label class="toggle" for="toggle-geofence">
+          <input type="checkbox" id="toggle-geofence" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════ EMERGENCY MEDICAL INFO ═══════════════ -->
+    <section class="emed-section">
+      <div class="emed-header-row">
+        <h3 class="section-title">🏥 Emergency Medical Info</h3>
+        <button id="btn-edit-emergency-info" class="btn btn--ghost btn--sm">✏️ Edit</button>
+      </div>
+      <p class="emed-subtitle">Vital info for first responders — stored only on your device.</p>
+
+      <!-- Preview Card -->
+      <div id="emergency-info-preview" class="emed-preview-card">
+        <div id="emergency-info-preview-body" class="emed-preview-body"></div>
+      </div>
+
+      <!-- Edit Form Card (hidden by default) -->
+      <div id="emergency-info-form-card" class="emed-form-card hidden">
+        <form id="emergency-info-form" autocomplete="off">
+          <div class="form-group">
+            <label for="emed-fullName">Full Name</label>
+            <input type="text" id="emed-fullName" placeholder="e.g. Shruti Keshri" />
+          </div>
+          <div class="form-group">
+            <label for="emed-dob">Date of Birth</label>
+            <input type="date" id="emed-dob" />
+          </div>
+          <div class="form-group">
+            <label for="emed-bloodType">Blood Type</label>
+            <select id="emed-bloodType">
+              <option value="">— Select —</option>
+              <option value="A+">A+</option>
+              <option value="A-">A−</option>
+              <option value="B+">B+</option>
+              <option value="B-">B−</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB−</option>
+              <option value="O+">O+</option>
+              <option value="O-">O−</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="emed-allergies">Allergies</label>
+            <textarea id="emed-allergies" rows="2" placeholder="e.g. Penicillin, Peanuts"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="emed-medications">Current Medications</label>
+            <textarea id="emed-medications" rows="2" placeholder="e.g. Metformin 500mg"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="emed-conditions">Medical Conditions</label>
+            <textarea id="emed-conditions" rows="2" placeholder="e.g. Asthma, Diabetes Type 2"></textarea>
+          </div>
+          <div class="form-group emed-checkbox-row">
+            <label for="emed-organDonor">
+              <input type="checkbox" id="emed-organDonor" />
+              <span>Organ Donor</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="emed-insuranceInfo">Insurance Info</label>
+            <input type="text" id="emed-insuranceInfo" placeholder="e.g. Policy #12345, Star Health" />
+          </div>
+          <div class="form-group">
+            <label for="emed-emergencyNotes">Additional Notes</label>
+            <textarea id="emed-emergencyNotes" rows="2" placeholder="e.g. Wears glasses, has a pacemaker"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn--green btn--sm">💾 Save Info</button>
+            <button type="button" class="btn btn--ghost btn--sm" id="btn-cancel-emergency-info">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ═══════════════ EMERGENCY HELPLINES (Feature 10) ═══════════════ -->
+    <section class="helpline-section">
+      <h3 class="section-title" data-i18n="helpline_title">🆘 Emergency Helplines</h3>
+      <div class="helpline-grid">
+        <div class="helpline-card" onclick="EmergencyCall.call('universal')">
+          <span class="helpline-emoji">🆘</span>
+          <span class="helpline-number">112</span>
+          <span class="helpline-label">Universal Emergency</span>
+        </div>
+        <div class="helpline-card" onclick="EmergencyCall.call('police')">
+          <span class="helpline-emoji">🚔</span>
+          <span class="helpline-number">100</span>
+          <span class="helpline-label">Police</span>
+        </div>
+        <div class="helpline-card" onclick="EmergencyCall.call('women')">
+          <span class="helpline-emoji">👩‍💼</span>
+          <span class="helpline-number">1091</span>
+          <span class="helpline-label">Women Helpline</span>
+        </div>
+        <div class="helpline-card" onclick="EmergencyCall.call('ambulance')">
+          <span class="helpline-emoji">🚑</span>
+          <span class="helpline-number">108</span>
+          <span class="helpline-label">Ambulance</span>
+        </div>
       </div>
     </section>
   </main>
@@ -314,6 +467,77 @@
       </div>
     </div>
 
+    <!-- ═══════════════ GEO-FENCE ZONES ═══════════════ -->
+    <section class="geofence-section" id="geofence-section">
+      <div class="gf-header-row">
+        <h4>⛔ Unsafe Zones</h4>
+        <div class="gf-header-actions">
+          <button id="btn-add-geofence" class="btn btn--red btn--sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Unsafe Zone
+          </button>
+          <button id="btn-clear-geofences" class="btn btn--ghost btn--sm">Clear All</button>
+        </div>
+      </div>
+      <p class="gf-desc">Mark areas you consider unsafe. You'll be alerted when you enter them.</p>
+      <div id="geofence-zone-list" class="gf-zone-list"></div>
+    </section>
+
+    <!-- ═══════════════ COMMUNITY SAFETY MAP (Feature 14) ═══════════════ -->
+    <section class="community-map-section">
+      <h3 class="section-title" data-i18n="community_safety_map">🗺️ Community Safety Map</h3>
+      <div class="community-map-actions">
+        <button id="btn-report-area" class="btn btn--amber btn--sm">📍 Report Unsafe Area</button>
+        <button id="btn-load-amenities" class="btn btn--green btn--sm">🏥 Nearby Police & Hospitals</button>
+        <button id="btn-load-community-reports" class="btn btn--blue btn--sm">📊 Load Reports</button>
+      </div>
+    </section>
+
+    <!-- ═══════════════ SAFE WALKING ROUTE (Feature 15) ═══════════════ -->
+    <section class="safe-route-section">
+      <h3 class="section-title" data-i18n="safe_walking_route">🚶 Safe Walking Route</h3>
+      <div id="safe-route-section" style="padding:0;margin-bottom:8px">
+
+        <!-- Route Status Bar -->
+        <div id="route-status" style="display:none;
+          background:rgba(10,132,255,0.1);border:1px solid rgba(10,132,255,0.3);
+          border-radius:12px;padding:10px 14px;margin-bottom:8px;
+          font-size:0.82rem;color:var(--accent-blue);
+          align-items:center;gap:8px">
+          <span id="route-status-text"></span>
+        </div>
+
+        <!-- Instruction when picking destination -->
+        <div id="route-pick-hint" style="display:none;
+          background:rgba(191,90,242,0.1);border:1px solid rgba(191,90,242,0.3);
+          border-radius:12px;padding:10px 14px;margin-bottom:8px;
+          font-size:0.82rem;color:#BF5AF2;text-align:center">
+          📍 Tap anywhere on the map to set your destination
+          <br/><button onclick="cancelRoutePick()"
+            style="margin-top:6px;background:transparent;border:none;
+            color:#BF5AF2;font-size:0.78rem;text-decoration:underline;cursor:pointer">
+            Cancel
+          </button>
+        </div>
+
+        <!-- Main buttons row -->
+        <div style="display:flex;gap:8px">
+          <button id="safe-route-btn" onclick="startRoutePick()"
+            style="flex:1;padding:11px;border-radius:12px;font-size:0.82rem;
+            font-weight:600;background:rgba(10,132,255,0.1);
+            color:var(--accent-blue);border:1px solid rgba(10,132,255,0.3);
+            cursor:pointer">
+            🗺️ Get Safe Route
+          </button>
+          <button id="clear-route-btn" onclick="clearSafeRoute()"
+            style="display:none;padding:11px 16px;border-radius:12px;
+            font-size:0.82rem;font-weight:600;background:rgba(255,45,85,0.1);
+            color:var(--accent-red);border:1px solid rgba(255,45,85,0.2);
+            cursor:pointer">✕ Clear</button>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- ═══════════════ SCREEN: CONTACTS ═══════════════ -->
@@ -422,6 +646,82 @@
     <!-- Stats Cards -->
     <section id="history-stats" class="history-stats-grid"></section>
 
+    <!-- Activity Insights (Feature 6: Chart.js) -->
+    <section class="insights-section">
+      <button id="btn-toggle-insights" class="btn btn--ghost btn--sm insights-toggle-btn">📊 Show Insights</button>
+      <div id="insights-panel" class="insights-panel hidden">
+        <!-- Summary Stats -->
+        <div id="insights-summary" class="insights-summary-grid"></div>
+        <!-- Empty State -->
+        <div id="insights-empty" class="insights-empty hidden">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+          <p>No data to visualize yet.</p>
+        </div>
+        <!-- Charts Grid -->
+        <div id="insights-charts" class="insights-charts-grid">
+          <div class="insight-chart-card">
+            <h4 class="insight-chart-title">Severity Breakdown</h4>
+            <div class="insight-chart-wrap insight-chart-wrap--doughnut">
+              <canvas id="chart-severity"></canvas>
+            </div>
+          </div>
+          <div class="insight-chart-card">
+            <h4 class="insight-chart-title">Last 7 Days</h4>
+            <div class="insight-chart-wrap">
+              <canvas id="chart-timeline"></canvas>
+            </div>
+          </div>
+          <div class="insight-chart-card">
+            <h4 class="insight-chart-title">Activity by Hour</h4>
+            <div class="insight-chart-wrap">
+              <canvas id="chart-hourly"></canvas>
+            </div>
+          </div>
+          <div class="insight-chart-card">
+            <h4 class="insight-chart-title">Top Event Types</h4>
+            <div class="insight-chart-wrap">
+              <canvas id="chart-top-types"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- D3.js Visualizations (Feature 7) -->
+    <section class="d3viz-section">
+      <button id="btn-toggle-d3viz" class="btn btn--ghost btn--sm d3viz-toggle-btn">🔬 Show Visualizations</button>
+      <div id="d3viz-panel" class="d3viz-panel hidden">
+        <!-- Empty State -->
+        <div id="d3viz-empty" class="d3viz-empty hidden">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          <p>No data to visualize yet.</p>
+        </div>
+        <!-- Viz Grid -->
+        <div id="d3viz-charts" class="d3viz-grid">
+          <div class="d3viz-card">
+            <h4 class="d3viz-card-title">🛡️ Safety Score</h4>
+            <p class="d3viz-card-sub">Based on events from the last 7 days</p>
+            <div id="d3-safety-gauge" class="d3viz-canvas"></div>
+          </div>
+          <div class="d3viz-card">
+            <h4 class="d3viz-card-title">🗓️ 30-Day Heatmap</h4>
+            <p class="d3viz-card-sub">Daily event frequency</p>
+            <div id="d3-heatmap" class="d3viz-canvas d3viz-canvas--heatmap"></div>
+          </div>
+          <div class="d3viz-card">
+            <h4 class="d3viz-card-title">⚡ Threat Timeline</h4>
+            <p class="d3viz-card-sub">Events by severity over the last 7 days</p>
+            <div id="d3-threat-timeline" class="d3viz-canvas"></div>
+          </div>
+          <div class="d3viz-card">
+            <h4 class="d3viz-card-title">📈 30-Day Trend</h4>
+            <p class="d3viz-card-sub">Weighted severity score per day</p>
+            <div id="d3-sparkline" class="d3viz-canvas d3viz-canvas--spark"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Search & Filter Bar -->
     <section class="history-controls">
       <div class="history-search-wrap">
@@ -520,6 +820,11 @@
       <div class="alert-actions">
         <button id="btn-stop-alert" class="btn btn--white btn--lg">I'm Safe — Cancel Alert</button>
         <button id="btn-call-police" class="btn btn--ghost-white btn--sm">Call Police (100)</button>
+        <div class="sos-call-grid">
+          <button class="btn btn--ghost-white btn--sm" onclick="EmergencyCall.call('universal')">🆘 112</button>
+          <button class="btn btn--ghost-white btn--sm" onclick="EmergencyCall.call('women')">👩‍💼 1091</button>
+          <button class="btn btn--ghost-white btn--sm" onclick="EmergencyCall.call('ambulance')">🚑 108</button>
+        </div>
       </div>
     </div>
   </div>
@@ -607,6 +912,150 @@
     </div>
   </div>
 
+  <!-- ═══════════════ STREAM BAR (Feature 12) ═══════════════ -->
+  <div id="stream-bar" class="stream-bar hidden">
+    <video id="stream-preview" class="stream-preview" autoplay playsinline muted></video>
+    <div class="stream-bar-info">
+      <span id="stream-status-text">Off</span>
+      <span>Viewers: <span id="stream-viewer-count">0</span></span>
+    </div>
+    <div class="stream-bar-actions">
+      <button id="btn-copy-stream-link" class="btn btn--ghost btn--sm">📋 Copy Link</button>
+      <button id="btn-share-stream" class="btn btn--ghost btn--sm">📤 Share</button>
+      <button id="btn-stop-stream" class="btn btn--red btn--sm">⏹ Stop</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ CRASH COUNTDOWN OVERLAY (Feature 13) ═══════════════ -->
+  <div id="crash-countdown-overlay" class="overlay hidden">
+    <div class="overlay-content crash-content">
+      <div class="crash-alert-icon">⚠️</div>
+      <h2>Fall / Crash Detected!</h2>
+      <p>SOS will activate in:</p>
+      <div class="crash-countdown-ring">
+        <span id="crash-countdown-number" class="countdown-number">15</span>
+      </div>
+      <button id="btn-crash-im-ok" class="btn btn--green btn--lg">✅ I'm OK — Cancel</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ REPORT MODAL (Feature 14) ═══════════════ -->
+  <div id="report-modal" style="display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,0.6);z-index:9999;align-items:center;
+    justify-content:center;padding:16px;backdrop-filter:blur(4px)">
+
+    <div style="background:var(--bg-card);border-radius:24px;
+      padding:24px;width:100%;max-width:400px;position:relative;
+      border:1px solid var(--border-color);
+      box-shadow:0 20px 60px rgba(0,0,0,0.4);
+      animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1)">
+
+      <!-- X Cancel Button -->
+      <button onclick="document.getElementById('report-modal').style.display='none'"
+        style="position:absolute;top:16px;right:16px;width:32px;height:32px;
+        border-radius:50%;background:var(--bg-secondary);
+        border:1px solid var(--border-color);color:var(--text-secondary);
+        font-size:1rem;cursor:pointer;display:flex;align-items:center;
+        justify-content:center;line-height:1">✕</button>
+
+      <!-- Header -->
+      <div style="margin-bottom:20px;padding-right:40px">
+        <h3 style="font-size:1rem;font-weight:700;margin:0 0 4px;
+          color:var(--text-primary)">📍 Report Unsafe Area</h3>
+        <p style="font-size:0.75rem;color:var(--text-secondary);margin:0">
+          Anonymous · Auto-expires in 48 hours</p>
+      </div>
+
+      <!-- Category -->
+      <div style="margin-bottom:16px">
+        <label style="font-size:0.75rem;font-weight:600;
+          color:var(--text-secondary);display:block;margin-bottom:8px;
+          text-transform:uppercase;letter-spacing:0.04em">Category</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="category-chips">
+          <button class="chip-btn active" data-val="unsafe"
+            onclick="selectChip(this,'category-chips')"
+            style="padding:8px 12px;border-radius:999px;font-size:0.78rem;
+            font-weight:600;border:1px solid var(--accent-amber);
+            background:rgba(255,159,10,0.15);color:var(--accent-amber);
+            cursor:pointer">⚠️ General Unsafe</button>
+          <button class="chip-btn" data-val="harassment"
+            onclick="selectChip(this,'category-chips')"
+            style="padding:8px 12px;border-radius:999px;font-size:0.78rem;
+            font-weight:600;border:1px solid var(--border-color);
+            background:var(--bg-secondary);color:var(--text-secondary);
+            cursor:pointer">🚫 Harassment</button>
+          <button class="chip-btn" data-val="theft"
+            onclick="selectChip(this,'category-chips')"
+            style="padding:8px 12px;border-radius:999px;font-size:0.78rem;
+            font-weight:600;border:1px solid var(--border-color);
+            background:var(--bg-secondary);color:var(--text-secondary);
+            cursor:pointer">💰 Theft/Robbery</button>
+          <button class="chip-btn" data-val="lighting"
+            onclick="selectChip(this,'category-chips')"
+            style="padding:8px 12px;border-radius:999px;font-size:0.78rem;
+            font-weight:600;border:1px solid var(--border-color);
+            background:var(--bg-secondary);color:var(--text-secondary);
+            cursor:pointer">💡 Poor Lighting</button>
+          <button class="chip-btn" data-val="other"
+            onclick="selectChip(this,'category-chips')"
+            style="padding:8px 12px;border-radius:999px;font-size:0.78rem;
+            font-weight:600;border:1px solid var(--border-color);
+            background:var(--bg-secondary);color:var(--text-secondary);
+            cursor:pointer">📍 Other</button>
+        </div>
+      </div>
+
+      <!-- Severity -->
+      <div style="margin-bottom:16px">
+        <label style="font-size:0.75rem;font-weight:600;
+          color:var(--text-secondary);display:block;margin-bottom:8px;
+          text-transform:uppercase;letter-spacing:0.04em">Severity</label>
+        <div style="display:flex;gap:8px" id="severity-chips">
+          <button class="chip-btn" data-val="low"
+            onclick="selectChip(this,'severity-chips')"
+            style="flex:1;padding:10px;border-radius:12px;font-size:0.8rem;
+            font-weight:600;border:1px solid var(--border-color);
+            background:var(--bg-secondary);color:var(--text-secondary);
+            cursor:pointer">Low</button>
+          <button class="chip-btn active" data-val="medium"
+            onclick="selectChip(this,'severity-chips')"
+            style="flex:1;padding:10px;border-radius:12px;font-size:0.8rem;
+            font-weight:600;border:1px solid var(--accent-amber);
+            background:rgba(255,159,10,0.15);color:var(--accent-amber);
+            cursor:pointer">Medium</button>
+          <button class="chip-btn" data-val="high"
+            onclick="selectChip(this,'severity-chips')"
+            style="flex:1;padding:10px;border-radius:12px;font-size:0.8rem;
+            font-weight:600;border:1px solid var(--border-color);
+            background:var(--bg-secondary);color:var(--text-secondary);
+            cursor:pointer">High</button>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div style="margin-bottom:20px">
+        <label style="font-size:0.75rem;font-weight:600;
+          color:var(--text-secondary);display:block;margin-bottom:8px;
+          text-transform:uppercase;letter-spacing:0.04em">Description</label>
+        <textarea id="rdesc" placeholder="Brief description (optional)..."
+          rows="3" style="width:100%;padding:12px;border-radius:12px;
+          background:var(--bg-secondary);border:1px solid var(--border-color);
+          color:var(--text-primary);font-size:0.85rem;resize:none;
+          box-sizing:border-box;font-family:inherit;line-height:1.5;
+          outline:none"></textarea>
+      </div>
+
+      <!-- Submit Button -->
+      <button id="btn-submit-report" onclick="submitReport()"
+        style="width:100%;padding:14px;background:var(--accent-amber);
+        color:white;border:none;border-radius:14px;font-weight:700;
+        font-size:0.9rem;cursor:pointer;
+        box-shadow:0 4px 16px rgba(255,159,10,0.3)">
+        📍 Submit Report
+      </button>
+    </div>
+  </div>
+
   <!-- Toast Notifications Container -->
   <div id="toast-container"></div>
 
@@ -617,6 +1066,15 @@
     (function() { emailjs.init('mrTZ15ONC1nl0IMht'); })();
   </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <!-- Feature modules (10-16) — loaded as regular scripts before ES module -->
+  <script src="js/emergencyCall.js"></script>
+  <script src="js/smsAlert.js"></script>
+  <script src="js/liveStream.js"></script>
+  <script src="js/communityMap.js"></script>
+  <script src="js/safeRoute.js"></script>
+  <script src="js/i18n.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

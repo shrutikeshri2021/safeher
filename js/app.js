@@ -15,6 +15,15 @@ import { showToast, showFakeCall, hideFakeCall } from './alerts.js';
 import * as history from './history.js';
 import { logEvent } from './historyLogger.js';
 import * as batteryWatch from './batteryWatch.js';
+import * as wakeLock from './wakeLock.js';
+import * as ambientLight from './ambientLight.js';
+import * as ntfyPush from './ntfyPush.js';
+import * as backgroundSync from './backgroundSync.js';
+import * as offlineGeo from './offlineGeo.js';
+import * as activityInsights from './activityInsights.js';
+import * as d3Visualizations from './d3Visualizations.js';
+import * as emergencyInfo from './emergencyInfo.js';
+import * as geofence from './geofence.js';
 
 /* ══════════════════════════════════════════
    SHARED APP STATE
@@ -39,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
   voiceDetect.setAppState(AppState);
   recorder.setAppState(AppState);
   batteryWatch.setAppState(AppState);
+  ambientLight.setAppState(AppState);
 
   /* ── Screen navigation ── */
   initNavigation();
@@ -50,6 +60,38 @@ document.addEventListener('DOMContentLoaded', () => {
   recorder.init();
   history.init();
   batteryWatch.init();
+  wakeLock.init();   // Feature 1: Wake Lock Manager
+  ambientLight.init();   // Feature 2: Ambient Light Sensor
+  ntfyPush.init();       // Feature 3: NTFY.SH Push Notifications
+  backgroundSync.init(); // Feature 4: Background Sync API
+  offlineGeo.init();     // Feature 5: Offline Geocoding Cache
+  activityInsights.init(); // Feature 6: Chart.js Activity Insights
+  d3Visualizations.init(); // Feature 7: D3.js Visualizations
+  emergencyInfo.init();      // Feature 8: Emergency Medical Info
+  geofence.init();           // Feature 9: Geo-fence Unsafe Zones
+
+  /* ── Make showToast globally available for non-module scripts ── */
+  window.showToast = showToast;
+
+  /* ── Crash "I'm OK" button + crash→SOS (merged into motionDetect) ── */
+  const btnCrashOk = document.getElementById('btn-crash-im-ok');
+  if (btnCrashOk) btnCrashOk.addEventListener('click', () => motionDetect.crashImOk());
+
+  document.addEventListener('safeher:crash-detected', () => {
+    sosButton.activateSOS();
+  });
+
+  /* ── Initialize global feature modules (Features 10-16) ── */
+  if (window.EmergencyCall) window.EmergencyCall.init();
+  if (window.SMSAlert) window.SMSAlert.init();
+  if (window.LiveStream) window.LiveStream.init();
+  if (window.CommunityMap) window.CommunityMap.init();
+  if (window.SafeRoute) window.SafeRoute.init();
+  if (window.I18n) window.I18n.init();
+
+  /* ── Safety: force-hide report modal on startup (in case old cache served broken HTML) ── */
+  const _rm = document.getElementById('report-modal');
+  if (_rm) _rm.style.display = 'none';
 
   /* ── Theme (light / dark) ── */
   initTheme();
@@ -110,7 +152,19 @@ function initNavigation() {
 
       /* ── Per-tab lazy init / refresh ── */
       if (target === 'journey') {
-        setTimeout(() => { initMap(); refreshMap(); }, 150);
+        setTimeout(() => {
+          initMap(); refreshMap();
+          /* Pass Leaflet map instance to geofence + community map + safe route */
+          import('./mapJourney.js').then(m => {
+            const mapInstance = m.getMapInstance?.();
+            if (mapInstance) {
+              geofence.setMap(mapInstance);
+              window._safeherMap = mapInstance;
+              if (window.CommunityMap) window.CommunityMap.setMap(mapInstance);
+              if (window.SafeRoute) window.SafeRoute.setMap(mapInstance);
+            }
+          });
+        }, 150);
       }
       if (target === 'contacts') {
         import('./contacts.js').then(m => m.renderContacts());
@@ -120,6 +174,8 @@ function initNavigation() {
       }
       if (target === 'history') {
         history.refreshHistory();
+        activityInsights.refreshInsights();
+        d3Visualizations.refreshVisualizations();
       }
     });
   });
@@ -198,8 +254,38 @@ function wireKeyboardShortcuts() {
 function registerSW() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
-      .then(reg => console.log('[SW] registered', reg.scope))
+      .then(reg => {
+        console.log('[SW] registered', reg.scope);
+
+        /* Auto-reload when a new SW activates (user gets fresh HTML) */
+        reg.addEventListener('updatefound', () => {
+          const newSW = reg.installing;
+          if (newSW) {
+            newSW.addEventListener('statechange', () => {
+              if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
+                console.log('[SW] New version activated — reloading for fresh content');
+                window.location.reload();
+              }
+            });
+          }
+        });
+
+        /* Also force check for updates every time app loads */
+        reg.update().catch(() => {});
+      })
       .catch(err => console.warn('[SW] registration failed', err));
+
+    // Feature 4: Listen for sync messages from SW
+    navigator.serviceWorker.addEventListener('message', (e) => {
+      try {
+        if (e.data && e.data.type === 'PROCESS_SYNC_QUEUE') {
+          console.log('[SW] Received PROCESS_SYNC_QUEUE from service worker');
+          backgroundSync.processQueue();
+        }
+      } catch (err) {
+        console.error('[SW] message handler error:', err);
+      }
+    });
   }
 }
 
@@ -229,7 +315,7 @@ function applyTheme(theme) {
   const knob = document.getElementById('theme-knob');
   const meta = document.querySelector('meta[name="theme-color"]');
   if (knob) knob.textContent = theme === 'light' ? '☀️' : '🌙';
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#F7F0FF' : '#070B14');
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#F8F9FF' : '#0A0E1A');
 }
 
 /* ══════════════════════════════════════════

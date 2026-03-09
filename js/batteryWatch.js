@@ -9,6 +9,7 @@
 import { showToast, sendBrowserNotification } from './alerts.js';
 import { sendAlertToContacts } from './contacts.js';
 import { logEvent } from './historyLogger.js';
+import * as ntfyPush from './ntfyPush.js';
 
 /* ──── Global ref (injected by app.js) ──── */
 let AppState = null;
@@ -127,6 +128,13 @@ async function sendBatteryAlert(pct, severity) {
   } catch (err) {
     console.error('[Battery] Failed to send alert:', err);
   }
+
+  // Feature 3: Send ntfy.sh push notification for battery alert
+  try {
+    if (ntfyPush.isNtfyEnabled()) {
+      ntfyPush.sendBatteryAlert(pct).catch(err => console.warn('[Battery] ntfy push failed:', err));
+    }
+  } catch (_) {}
 
   if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
 

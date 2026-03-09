@@ -1,0 +1,335 @@
+/* ═══════════════════════════════════════════════
+   SafeHer — Features 10-16 Styles
+   Emergency Calls · SMS · Stream · Crash · Community Map
+   Safe Route · Multilingual
+   ═══════════════════════════════════════════════ */
+
+/* ── Button color variants ── */
+.btn--red    { background: var(--red);    color: #fff; border: none; }
+.btn--blue   { background: var(--blue);   color: #000; border: none; }
+.btn--amber  { background: var(--amber);  color: #000; border: none; }
+.btn--cyan   { background: var(--cyan);   color: #000; border: none; }
+
+/* ══════════════════════════════════════════════
+   Feature 10 — Emergency Helpline Cards
+   ══════════════════════════════════════════════ */
+.helpline-section { margin-top: 16px; }
+
+.helpline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.helpline-card {
+  background: var(--bg-layer2);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.helpline-card:active {
+  transform: scale(0.96);
+}
+
+.helpline-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.helpline-emoji {
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.helpline-number {
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: block;
+  color: var(--text-primary);
+}
+
+.helpline-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  display: block;
+}
+
+/* ── SOS Overlay Call Grid ── */
+.sos-call-grid {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ══════════════════════════════════════════════
+   Feature 12 — Stream Bar
+   ══════════════════════════════════════════════ */
+.stream-bar {
+  position: fixed;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 94%;
+  max-width: 420px;
+  background: var(--bg-layer2);
+  border: 1px solid var(--red);
+  border-radius: 16px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 200;
+  box-shadow: 0 4px 24px rgba(255, 51, 102, 0.2);
+}
+
+.stream-preview {
+  width: 64px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #111;
+}
+
+.stream-bar-info {
+  flex: 1;
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stream-bar-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.stream-bar-actions .btn {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+}
+
+/* ══════════════════════════════════════════════
+   Feature 13 — Crash Countdown
+   ══════════════════════════════════════════════ */
+.crash-content {
+  text-align: center;
+}
+
+.crash-alert-icon {
+  font-size: 4rem;
+  margin-bottom: 12px;
+  animation: crashPulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes crashPulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.2); }
+}
+
+.crash-countdown-ring {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 4px solid var(--amber);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px auto;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--amber);
+}
+
+/* ══════════════════════════════════════════════
+   Feature 14 — Community Safety Map
+   ══════════════════════════════════════════════ */
+.community-map-section { margin-top: 16px; }
+
+.community-map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.community-marker,
+.amenity-marker {
+  background: none !important;
+  border: none !important;
+}
+
+.community-marker-icon,
+.amenity-marker-icon {
+  font-size: 1.4rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* ── Report Modal ── */
+.report-modal-content {
+  max-width: 380px;
+  width: 90%;
+}
+
+/* ══════════════════════════════════════════════
+   Feature 15 — Safe Walking Route
+   ══════════════════════════════════════════════ */
+.safe-route-section { margin-top: 16px; }
+
+.safe-route-controls {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.safe-route-controls .form-group {
+  flex: 1;
+  min-width: 120px;
+}
+
+.safe-route-btns {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.safe-route-info {
+  margin-top: 10px;
+  background: var(--bg-layer2);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.route-info-stats {
+  display: flex;
+  gap: 16px;
+  font-weight: 600;
+}
+
+.safe-route-steps {
+  margin-top: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-layer1);
+  border-radius: 10px;
+}
+
+.route-step {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+
+.route-step:last-child { border-bottom: none; }
+
+.route-step-num {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  background: var(--cyan);
+  color: #000;
+  border-radius: 50%;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  line-height: 22px;
+  margin-right: 6px;
+}
+
+/* ══════════════════════════════════════════════
+   Features 11, 14, 15 — Setup Cards
+   ══════════════════════════════════════════════ */
+.twilio-section,
+.api-setup-section {
+  margin-top: 16px;
+  background: var(--bg-layer2);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.twilio-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 4px 0 10px;
+}
+
+.twilio-status-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.twilio-status-ok { color: var(--green); font-weight: 600; }
+.twilio-status-none { color: var(--text-secondary); }
+
+.setup-details {
+  margin-top: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.setup-details summary {
+  padding: 10px 14px;
+  cursor: pointer;
+  background: var(--bg-layer1);
+  font-weight: 500;
+  font-size: 0.9rem;
+  list-style: none;
+}
+
+.setup-details summary::-webkit-details-marker { display: none; }
+
+.setup-details summary::before {
+  content: '▸ ';
+  margin-right: 4px;
+}
+
+.setup-details[open] summary::before {
+  content: '▾ ';
+}
+
+.setup-form {
+  padding: 12px 14px;
+}
+
+.setup-details + .setup-details {
+  margin-top: 8px;
+}
+
+/* ══════════════════════════════════════════════
+   Feature 16 — Language Picker
+   ══════════════════════════════════════════════ */
+.lang-picker-wrap {
+  display: flex;
+  align-items: center;
+}
+
+#lang-picker {
+  background: var(--bg-layer2);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-size: 0.72rem;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  outline: none;
+}
+
+#lang-picker:focus {
+  border-color: var(--cyan);
+}

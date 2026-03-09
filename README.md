@@ -233,6 +233,25 @@ Women face safety threats in everyday life — walking alone at night, commuting
 - **Vibration patterns** — continuous vibration loop during SOS
 - **Ringtone** — 4-note sine wave for fake call (C5-E5-G5-E5)
 
+### 🏥 Emergency Medical Info
+- **Blood type, allergies, medications, medical conditions** — all stored in localStorage
+- **Organ donor status** + insurance info + free-text notes
+- **Read-only preview card** on Home screen — always visible at a glance
+- **Edit form** — tap Edit to update, saved instantly
+- **Privacy first** — data never leaves the device
+- **Summary export** — `getEmergencySummary()` returns compact text for embedding in alert emails
+- Designed for **first responders** who need critical info fast
+
+### ⛔ Geo-fence Unsafe Zone Alerts
+- **Mark unsafe zones** on the Leaflet map with custom label and radius (50–2000m)
+- Zones rendered as **dashed red circles** with floating labels
+- **Toggle monitoring** from Home screen — uses `watchPosition` for continuous tracking
+- **Auto-alert** when you enter any marked zone — sends alert to all emergency contacts
+- **5-minute cooldown** per zone to prevent alert spam
+- **Persistent zones** — saved in localStorage across sessions
+- **Manage zones** — add, delete individual zones, or clear all from Journey screen
+- All zone events **logged to history** (zone added, alert triggered, monitoring on/off)
+
 ### ⌨️ Keyboard Shortcuts
 | Shortcut | Action |
 |----------|--------|
@@ -435,6 +454,14 @@ SafeHer/
 │   │
 │   ├── historyLogger.js    # logEvent() — captures timestamp, location, trigger, media,
 │   │                         contacts, system info (battery, network) → writes to IndexedDB
+│   │
+│   ├── emergencyInfo.js    # Emergency medical info CRUD (blood type, allergies,
+│   │                         medications, conditions, organ donor, insurance),
+│   │                         localStorage, preview card, edit form, summary export
+│   │
+│   ├── geofence.js         # Geo-fence unsafe zone system — add/remove zones on
+│   │                         Leaflet map, watchPosition proximity monitoring,
+│   │                         auto-alert on entry (5min cooldown), localStorage
 │   │
 │   └── db.js               # IndexedDB helpers — openDB, getAllHistory, getHistoryStats,
 │                              clearAllHistory, deleteHistoryEvent
@@ -696,6 +723,21 @@ SafeHer/
 - Removed Walk-Me-Home dead man's switch, Destination & ETA, and Send My Location features
 - Fixed single-tap recording (debounce flag, preventDefault, simplified stop guard)
 - Improved pause/resume as a clear toggle button (⏸ Pause amber ↔ ▶ Resume green)
+
+### Step 18: Emergency Medical Info Screen
+- Added `emergencyInfo.js` module with full CRUD in localStorage
+- Blood type, allergies, medications, conditions, organ donor, insurance, notes
+- Read-only preview card on Home screen, edit form with toggle
+- `getEmergencySummary()` export for embedding in alert emails
+- All medical info stays on-device — zero server dependency
+
+### Step 19: Geo-fence Unsafe Zone Alerts
+- Added `geofence.js` module with map-based zone management
+- Users mark unsafe zones on the Leaflet map (Journey tab) with custom label + radius
+- Zones drawn as dashed red circles with floating labels
+- Toggle monitoring from Home screen — uses `watchPosition` for continuous GPS checks
+- Auto-alerts all emergency contacts when entering a marked zone
+- 5-minute cooldown per zone, persistent in localStorage, full history logging
 
 ---
 

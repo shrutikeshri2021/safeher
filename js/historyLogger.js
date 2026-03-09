@@ -5,6 +5,7 @@
    ═══════════════════════════════════════════════ */
 
 import { saveHistoryEvent } from './db.js';
+import * as offlineGeo from './offlineGeo.js';
 
 /* ── Event type → auto-generated title & severity ── */
 const EVENT_META = {
@@ -24,7 +25,23 @@ const EVENT_META = {
   siren_activated:   { title: '🔊 Siren Activated',         severity: 'warning'  },
   location_shared:   { title: '📍 Location Shared',         severity: 'info'     },
   app_opened:        { title: '📱 App Opened',              severity: 'info'     },
-  emergency_active:  { title: '🚨 Emergency Activated',     severity: 'critical' }
+  emergency_active:  { title: '🚨 Emergency Activated',     severity: 'critical' },
+  darkness_detected:     { title: '🌑 Darkness Detected',       severity: 'warning'  },
+  darkness_sudden_drop:  { title: '⚡ Sudden Light Drop',       severity: 'warning'  },
+  emergency_info_updated:   { title: '🏥 Medical Info Updated',    severity: 'info'     },
+  geofence_added:            { title: '⛔ Unsafe Zone Added',       severity: 'info'     },
+  geofence_alert:            { title: '⛔ Entered Unsafe Zone',     severity: 'critical' },
+  geofence_monitoring_on:    { title: '📡 Geo-fence Monitoring On', severity: 'info'     },
+  geofence_monitoring_off:   { title: '📡 Geo-fence Monitoring Off',severity: 'info'     },
+  emergency_call:            { title: '📞 Emergency Call Made',      severity: 'critical' },
+  sms_alert_sent:            { title: '📱 SMS Alert Sent',           severity: 'warning'  },
+  stream_started:            { title: '📹 Live Stream Started',      severity: 'warning'  },
+  stream_stopped:            { title: '📹 Live Stream Stopped',      severity: 'info'     },
+  crash_detected:            { title: '💥 Crash/Fall Detected',      severity: 'critical' },
+  crash_false_alarm:         { title: '✅ Crash False Alarm',         severity: 'info'     },
+  community_report:          { title: '📍 Area Reported Unsafe',     severity: 'info'     },
+  safe_route_requested:      { title: '🗺️ Safe Route Requested',    severity: 'info'     },
+  language_changed:          { title: '🌐 Language Changed',         severity: 'info'     }
 };
 
 /* ══════════════════════════════════════════
@@ -125,8 +142,16 @@ function getQuickGPS() {
   });
 }
 
-/* ── Reverse geocode via Nominatim ── */
+/* ── Reverse geocode via offlineGeo cache (Feature 5) with Nominatim fallback ── */
 async function reverseGeocode(lat, lng) {
+  try {
+    /* Try offlineGeo first — cache-first with Nominatim behind the scenes */
+    const addr = await offlineGeo.reverseGeocode(lat, lng);
+    if (addr) return addr;
+  } catch (e) {
+    console.log('[HistoryLogger] offlineGeo fallback:', e.message);
+  }
+  /* Direct Nominatim fallback if offlineGeo module failed entirely */
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&zoom=18`;
     const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });

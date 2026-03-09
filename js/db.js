@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════
    SafeHer — Shared IndexedDB Engine
-   Database: SafeHerDB v2
-   Stores: recordings (v1), history (v2)
+   Database: SafeHerDB v3
+   Stores: recordings (v1), history (v2), geocache (v3)
    ═══════════════════════════════════════════════ */
 
 const DB_NAME    = 'SafeHerDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const HISTORY_STORE = 'history';
 
 let db = null;
@@ -14,8 +14,9 @@ let db = null;
    openDB()  — opens / upgrades SafeHerDB
    v1 → recordings store
    v2 → + history store with indexes
+   v3 → + geocache store (Feature 5)
    ══════════════════════════════════════════ */
-function openDB() {
+export function openDB() {
   return new Promise((resolve, reject) => {
     if (db) { resolve(db); return; }
     const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -34,6 +35,11 @@ function openDB() {
         store.createIndex('by_timestamp', 'timestamp', { unique: false });
         store.createIndex('by_type',      'type',      { unique: false });
         store.createIndex('by_severity',  'severity',  { unique: false });
+      }
+
+      /* v3 — geocache (Feature 5: Offline Geocoding) */
+      if (!database.objectStoreNames.contains('geocache')) {
+        database.createObjectStore('geocache', { keyPath: 'key' });
       }
     };
 

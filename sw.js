@@ -1,7 +1,7 @@
 /* ───────────────────────────────────────────────
    SafeHer – Service Worker (Cache-first + offline)
    ─────────────────────────────────────────────── */
-const CACHE_NAME = 'safeher-v39';
+const CACHE_NAME = 'safeher-v57';
 const LOCAL_ASSETS = [
   '/',
   '/index.html',
@@ -19,6 +19,26 @@ const LOCAL_ASSETS = [
   '/js/historyLogger.js',
   '/js/history.js',
   '/js/batteryWatch.js',
+  '/js/wakeLock.js',
+  '/js/ambientLight.js',
+  '/js/ntfyPush.js',
+  '/js/backgroundSync.js',
+  '/js/offlineGeo.js',
+  '/js/activityInsights.js',
+  '/js/d3Visualizations.js',
+  '/js/emergencyInfo.js',
+  '/js/geofence.js',
+  '/js/emergencyCall.js',
+  '/js/smsAlert.js',
+  '/js/liveStream.js',
+  '/js/communityMap.js',
+  '/js/safeRoute.js',
+  '/js/i18n.js',
+  '/watch.html',
+  '/css/features.css',
+  '/assets/i18n/en.json',
+  '/assets/i18n/hi.json',
+  '/assets/i18n/te.json',
   '/manifest.json',
   '/assets/icons/icon-192.svg',
   '/assets/icons/icon-512.svg'
@@ -26,8 +46,11 @@ const LOCAL_ASSETS = [
 const CDN_ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-  'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap',
-  'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js'
+  'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap',
+  'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js',
+  'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
+  'https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js',
+  'https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js'
 ];
 
 /* ── Install ─────────────────────────────────── */
@@ -55,6 +78,23 @@ self.addEventListener('activate', (e) => {
 
 /* ── Fetch — cache-first, network fallback ──── */
 self.addEventListener('fetch', (e) => {
+  /* ── Navigation / HTML → NETWORK-FIRST (always get fresh HTML) ── */
+  if (e.request.mode === 'navigate' || e.request.url.endsWith('.html')) {
+    e.respondWith(
+      fetch(e.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(e.request).then(c => c || caches.match('/index.html')))
+    );
+    return;
+  }
+
+  /* ── All other assets → CACHE-FIRST ── */
   e.respondWith(
     caches.match(e.request).then((cached) => {
       if (cached) return cached;
@@ -65,8 +105,27 @@ self.addEventListener('fetch', (e) => {
         }
         return response;
       });
-    }).catch(() => {
-      if (e.request.mode === 'navigate') return caches.match('/index.html');
-    })
+    }).catch(() => new Response('Offline', { status: 503, statusText: 'Service Unavailable' }))
   );
 });
+
+/* ── Background Sync (Feature 4) ─────────── */
+self.addEventListener('sync', (e) => {
+  if (e.tag === 'safeher-sync-alerts') {
+    console.log('[SW] Background sync triggered: safeher-sync-alerts');
+    e.waitUntil(processAlertQueue());
+  }
+});
+
+async function processAlertQueue() {
+  try {
+    // We can't access localStorage from SW, so we notify the client
+    const clients = await self.clients.matchAll({ type: 'window' });
+    for (const client of clients) {
+      client.postMessage({ type: 'PROCESS_SYNC_QUEUE' });
+    }
+    console.log('[SW] Notified clients to process sync queue');
+  } catch (err) {
+    console.error('[SW] processAlertQueue error:', err);
+  }
+}

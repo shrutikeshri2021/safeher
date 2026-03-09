@@ -378,13 +378,24 @@ export function updateStatusCard(state, title, sub) {
 
 /* ═══════════════ EMERGENCY DISPATCHERS ═══════════════ */
 
-/** sendEmergencyAlert(source) — full emergency: location + SMS/share + notification */
+/** sendEmergencyAlert(source) — full emergency: location + SMS/share + notification + ntfy push */
 export async function sendEmergencyAlert(source = 'sos') {
   try {
     console.log('🚨 [alerts.js] sendEmergencyAlert called, source:', source);
     const location = await getCurrentLocation();
     console.log('📍 [alerts.js] Location obtained:', location);
     sendBrowserNotification('🚨 SafeHer EMERGENCY', `SOS alert triggered (${source})! Alerting your contacts.`);
+
+    // Feature 3: Send ntfy.sh push notification
+    try {
+      const ntfy = await import('./ntfyPush.js');
+      if (ntfy.isNtfyEnabled()) {
+        ntfy.sendSOSNotification(location).catch(err => console.warn('[alerts.js] ntfy SOS push failed:', err));
+      }
+    } catch (err) {
+      console.warn('[alerts.js] ntfy import/send failed:', err);
+    }
+
     console.log('📨 [alerts.js] Importing contacts.js...');
     const { sendAlertToContacts } = await import('./contacts.js');
     console.log('✅ [alerts.js] contacts.js imported, calling sendAlertToContacts...');
@@ -396,12 +407,29 @@ export async function sendEmergencyAlert(source = 'sos') {
   }
 }
 
-/** sendAlert(source) — lighter alert: notification + contact message */
+/** sendAlert(source) — lighter alert: notification + contact message + ntfy push */
 export async function sendAlert(source = 'motion') {
   try {
     console.log('⚠️ [alerts.js] sendAlert called, source:', source);
     const location = await getCurrentLocation();
     sendBrowserNotification('⚠️ SafeHer Alert', `${source} alert triggered. Recording evidence.`);
+
+    // Feature 3: Send ntfy.sh push notification for lighter alerts
+    try {
+      const ntfy = await import('./ntfyPush.js');
+      if (ntfy.isNtfyEnabled()) {
+        const userName = localStorage.getItem('safeher_username') || 'SafeHer User';
+        ntfy.sendPush(
+          `⚠️ Alert from ${userName}`,
+          `${source} alert triggered. Check on them.`,
+          4,
+          ['warning']
+        ).catch(err => console.warn('[alerts.js] ntfy alert push failed:', err));
+      }
+    } catch (err) {
+      console.warn('[alerts.js] ntfy import/send failed:', err);
+    }
+
     const { sendAlertToContacts } = await import('./contacts.js');
     await sendAlertToContacts(location);
   } catch (err) {

@@ -191,15 +191,7 @@ export function initContactsUI() {
    SEND LOCATION BUTTONS
    SMS, Email, Web Share
    ══════════════════════════════════════════ */
-function wireSendLocationButtons() {
-  const smsBtn   = document.getElementById('btn-send-sms');
-  const emailBtn = document.getElementById('btn-send-email');
-  const shareBtn = document.getElementById('btn-send-share');
-
-  if (smsBtn)   smsBtn.addEventListener('click',   () => sendLocationViaSMS());
-  if (emailBtn) emailBtn.addEventListener('click', () => sendLocationViaEmail());
-  if (shareBtn) shareBtn.addEventListener('click', () => sendLocationViaShare());
-}
+/* wireSendLocationButtons — removed (buttons don't exist in HTML) */
 
 /* ── Get current GPS location (promise) ── */
 function getCurrentLocation() {
@@ -402,7 +394,7 @@ async function uploadSnapshot(base64Data) {
    Includes: GPS, address, satellite map,
    camera snapshot
    ══════════════════════════════════════════ */
-export async function sendAlertToContacts(location) {
+export async function sendAlertToContacts(location, customMessage) {
   console.log('🚨 sendAlertToContacts CALLED', location);
 
   // If location is null (GPS timed out in alerts.js), try fetching it here with watchPosition
@@ -592,7 +584,7 @@ export async function sendAlertToContacts(location) {
       ? `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}&travelmode=driving`
       : mapsLink;
 
-    const fullMessage = `🚨🚨🚨 EMERGENCY ALERT 🚨🚨🚨\n\n${userName} IS IN DANGER AND NEEDS IMMEDIATE HELP!\n\n📍 LIVE GPS LOCATION (tap to open map):\n${mapsLink}\n\n🚗 GET DIRECTIONS TO THEM (navigate now):\n${liveDirectionsLink}\n\n🗯️ SATELLITE VIEW (see if forest/desert/city):\n${satelliteLink}\n\n🏠 ADDRESS:\n${address}\n\n📍 GPS Coordinates: Lat ${lat}, Lng ${lng}\n\n⏰ Time: ${timeNow}\n\n📹 VIDEO IS BEING RECORDED on their device for evidence.\n\n📞 Please CALL them immediately or contact local police!${snapshotHtml}\n\nThis is an automated SOS alert from SafeHer Safety App.`;
+    const fullMessage = customMessage || `🚨🚨🚨 EMERGENCY ALERT 🚨🚨🚨\n\n${userName} IS IN DANGER AND NEEDS IMMEDIATE HELP!\n\n📍 LIVE GPS LOCATION (tap to open map):\n${mapsLink}\n\n🚗 GET DIRECTIONS TO THEM (navigate now):\n${liveDirectionsLink}\n\n🗯️ SATELLITE VIEW (see if forest/desert/city):\n${satelliteLink}\n\n🏠 ADDRESS:\n${address}\n\n📍 GPS Coordinates: Lat ${lat}, Lng ${lng}\n\n⏰ Time: ${timeNow}\n\n📹 VIDEO IS BEING RECORDED on their device for evidence.\n\n📞 Please CALL them immediately or contact local police!${snapshotHtml}\n\nThis is an automated SOS alert from SafeHer Safety App.`;
 
     const emailPromises = emailContacts.map(contact => {
       const templateParams = {

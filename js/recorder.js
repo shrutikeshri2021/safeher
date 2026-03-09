@@ -7,6 +7,7 @@
 
 import { showToast } from './alerts.js';
 import { logEvent } from './historyLogger.js';
+import * as WakeLock from './wakeLock.js';
 
 /* ──── Global ref (injected by app.js) ──── */
 let AppState = null;
@@ -14,7 +15,7 @@ export function setAppState(state) { AppState = state; }
 
 /* ──── IndexedDB constants ──── */
 const DB_NAME    = 'SafeHerDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NAME = 'recordings';
 
 /* ──── Module state ──── */
@@ -42,6 +43,7 @@ export async function init() {
   db = await openDB();
   wireRecorderUI();
   renderRecordings();
+  wireAutoSaveListeners();   // Feature 1: auto-save on interruption
 }
 
 function openDB() {
@@ -58,6 +60,10 @@ function openDB() {
         store.createIndex('by_timestamp', 'timestamp', { unique: false });
         store.createIndex('by_type',      'type',      { unique: false });
         store.createIndex('by_severity',  'severity',  { unique: false });
+      }
+      /* v3 — geocache (Feature 5: Offline Geocoding) */
+      if (!database.objectStoreNames.contains('geocache')) {
+        database.createObjectStore('geocache', { keyPath: 'key' });
       }
     };
     req.onsuccess = (e) => { db = e.target.result; resolve(db); };
@@ -270,6 +276,9 @@ export async function startRecording(type = 'manual') {
 
     if (AppState) AppState.isRecording = false;
 
+    // --- Release Wake Lock (Feature 1) ---
+    WakeLock.release('recording').catch(err => console.warn('[Recorder] Wake lock release failed:', err));
+
     resetRecordingUI();
     renderRecordings();
     updateRecordingBadge();
@@ -280,6 +289,10 @@ export async function startRecording(type = 'manual') {
   console.log('Recording started, state:', mediaRecorder.state);
 
   if (AppState) AppState.isRecording = true;
+
+  // --- Wake Lock (Feature 1) — keep screen on during recording ---
+  WakeLock.acquire('recording').catch(err => console.warn('[Recorder] Wake lock acquire failed:', err));
+
   showRecordingUI();
   startLiveTimer();
 
@@ -765,6 +778,120 @@ function escapeHtml(str) {
   const d = document.createElement('div');
   d.textContent = str;
   return d.innerHTML;
+}
+
+/* ══════════════════════════════════════════
+   FEATURE 1: AUTO-SAVE ON INTERRUPTION
+   Saves in-progress recording when:
+   - Page goes hidden (visibilitychange)
+   - Tab/app is about to close (beforeunload)
+   - JS error crashes app (window.onerror)
+   ══════════════════════════════════════════ */
+function wireAutoSaveListeners() {
+  try {
+    /* ── visibilitychange: auto-save when user switches away ── */
+    document.addEventListener('visibilitychange', () => {
+      try {
+        if (document.visibilityState === 'hidden' && mediaRecorder && mediaRecorder.state === 'recording') {
+          console.log('[Recorder] Page hidden during recording — triggering emergency auto-save');
+          emergencyAutoSave('page_hidden');
+        }
+      } catch (err) {
+        console.error('[Recorder] visibilitychange handler error:', err);
+      }
+    });
+
+    /* ── beforeunload: save before tab/app closes ── */
+    window.addEventListener('beforeunload', (e) => {
+      try {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          console.log('[Recorder] Page unloading during recording — triggering emergency auto-save');
+          emergencyAutoSave('page_unload');
+          // Give browser a moment to flush
+          e.preventDefault();
+          e.returnValue = 'Recording in progress — are you sure you want to leave?';
+        }
+      } catch (err) {
+        console.error('[Recorder] beforeunload handler error:', err);
+      }
+    });
+
+    /* ── window.onerror: save on JS crash ── */
+    const originalOnError = window.onerror;
+    window.onerror = function(msg, src, line, col, err) {
+      try {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          console.log('[Recorder] JS error during recording — triggering emergency auto-save');
+          emergencyAutoSave('js_error');
+        }
+      } catch (_) { /* silent */ }
+      // Call original handler if it existed
+      if (typeof originalOnError === 'function') {
+        return originalOnError(msg, src, line, col, err);
+      }
+      return false;
+    };
+
+    console.log('[Recorder] ✅ Auto-save listeners wired (visibilitychange, beforeunload, onerror)');
+  } catch (err) {
+    console.error('[Recorder] wireAutoSaveListeners() error:', err);
+  }
+}
+
+/**
+ * emergencyAutoSave(reason)
+ * Saves whatever chunks have been collected so far
+ * WITHOUT stopping the MediaRecorder (so recording can continue
+ * if the user returns to the tab).
+ */
+async function emergencyAutoSave(reason = 'unknown') {
+  try {
+    console.log(`[Recorder] emergencyAutoSave triggered — reason: ${reason}, chunks: ${recordedChunks.length}`);
+
+    if (recordedChunks.length === 0) {
+      console.log('[Recorder] No chunks to save');
+      return;
+    }
+
+    const totalSize = recordedChunks.reduce((sum, c) => sum + c.size, 0);
+    if (totalSize === 0) {
+      console.log('[Recorder] Chunks are empty (0 bytes)');
+      return;
+    }
+
+    // Create a blob from current chunks
+    const mime = (mediaRecorder && mediaRecorder.mimeType) || 'video/webm';
+    const blob = new Blob([...recordedChunks], { type: mime });
+    const duration = Math.round((Date.now() - (recordingStart || Date.now())) / 1000);
+    const hasVideo = currentStream ? currentStream.getVideoTracks().length > 0 : false;
+
+    const ts    = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    const fname = `SafeHer_autosave_${reason}_${ts}.webm`;
+
+    const record = {
+      timestamp:       Date.now(),
+      type:            (currentType || 'manual') + '_autosave',
+      mediaKind:       hasVideo ? 'video' : 'audio',
+      blob,
+      duration,
+      locationAtStart,
+      filename:        fname,
+      mimeType:        mime
+    };
+
+    if (!db) db = await openDB();
+    await saveRecord(record);
+
+    console.log(`[Recorder] ✅ Emergency auto-save complete: ${fname} (${blob.size} bytes, ${duration}s)`);
+
+    logEvent('recording_saved', {
+      media: { hasVideo, hasAudio: true, videoDuration: duration },
+      trigger: { method: `autosave_${reason}` }
+    }).catch(() => {});
+
+  } catch (err) {
+    console.error('[Recorder] emergencyAutoSave failed:', err);
+  }
 }
 
 /* ══════════════════════════════════════════

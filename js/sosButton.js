@@ -13,6 +13,7 @@ import {
 import { startEmergencyRecording, stopRecording } from './recorder.js';
 import { stopLiveLocationUpdates } from './contacts.js';
 import { logEvent } from './historyLogger.js';
+import * as WakeLock from './wakeLock.js';
 
 /* ──── Global ref (set by app.js) ──── */
 let AppState = null;
@@ -118,6 +119,9 @@ export function activateSOS() {
     AppState.threatScore = 100;
   }
 
+  // --- Wake Lock (Feature 1) — keep screen on during SOS ---
+  WakeLock.acquire('sos').catch(err => console.warn('[SOS] Wake lock acquire failed:', err));
+
   // --- Siren ---
   playSiren();
 
@@ -148,6 +152,12 @@ export function activateSOS() {
   // --- Send emergency alerts ---
   sendEmergencyAlert('sos');
 
+  // --- SMS Alert (Feature 11) ---
+  try { if (window.SMSAlert) window.SMSAlert.sendSOSAlert(); } catch (e) { console.warn('[SOS] SMS error:', e); }
+
+  // --- Live Stream (Feature 12) ---
+  try { if (window.LiveStream) window.LiveStream.start(); } catch (e) { console.warn('[SOS] Stream error:', e); }
+
   showToast('🚨 SOS Activated — Alerting contacts!', 'error');
 
   logEvent('sos_triggered', { trigger: { method: 'hold_button' } }).catch(() => {});
@@ -165,6 +175,9 @@ export function deactivateSOS() {
     AppState.threatScore = 0;
   }
 
+  // --- Release Wake Lock (Feature 1) ---
+  WakeLock.release('sos').catch(err => console.warn('[SOS] Wake lock release failed:', err));
+
   // --- Stop siren ---
   stopSiren();
 
@@ -174,6 +187,9 @@ export function deactivateSOS() {
 
   // --- Stop recording ---
   stopRecording();
+
+  // --- Stop Live Stream (Feature 12) ---
+  try { if (window.LiveStream) window.LiveStream.stop(); } catch (e) { console.warn('[SOS] Stream stop error:', e); }
 
   // --- Hide overlay + pill ---
   hideAlertOverlay();
