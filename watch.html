@@ -27,7 +27,7 @@
 <body>
   <h1>🔴 SafeHer Live Watch</h1>
   <p class="status" id="watch-status">Connecting to stream…</p>
-  <video id="remote-video" autoplay playsinline></video>
+  <video id="remote-video" autoplay playsinline muted style="display:block;width:100%;max-width:640px;border-radius:12px;background:#111;object-fit:contain;"></video>
   <p class="info" id="watch-info"></p>
 
   <script>
@@ -52,30 +52,33 @@
         peer.on('open', (myId) => {
           console.log('[Watch] My Peer ID:', myId);
 
-          /* Create a tiny dummy stream to initiate the call */
-          const canvas = document.createElement('canvas');
-          canvas.width = 1; canvas.height = 1;
-          const dummyStream = canvas.captureStream(0);
+          try {
+            /* Create a minimal dummy audio stream to initiate the call */
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const dummyStream = audioContext.createMediaStreamDestination().stream;
+            const call = peer.call(remotePeerId, dummyStream);
 
-          const call = peer.call(remotePeerId, dummyStream);
+            call.on('stream', (remoteStream) => {
+              console.log('[Watch] ✅ Receiving stream');
+              videoEl.srcObject = remoteStream;
+              statusEl.textContent = '🔴 LIVE — Watching stream';
+              statusEl.className = 'status connected';
+              infoEl.textContent = 'Connected at ' + new Date().toLocaleTimeString();
+            });
 
-          call.on('stream', (remoteStream) => {
-            console.log('[Watch] ✅ Receiving stream');
-            videoEl.srcObject = remoteStream;
-            statusEl.textContent = '🔴 LIVE — Watching stream';
-            statusEl.className = 'status connected';
-            infoEl.textContent = 'Connected at ' + new Date().toLocaleTimeString();
-          });
+            call.on('close', () => {
+              statusEl.textContent = '⚫ Stream ended';
+              statusEl.className = 'status';
+            });
 
-          call.on('close', () => {
-            statusEl.textContent = '⚫ Stream ended';
-            statusEl.className = 'status';
-          });
-
-          call.on('error', (err) => {
-            console.error('[Watch] Call error:', err);
-            statusEl.textContent = '⚠️ Connection error';
-          });
+            call.on('error', (err) => {
+              console.error('[Watch] Call error:', err);
+              statusEl.textContent = '⚠️ Connection error';
+            });
+          } catch (err) {
+            console.error('[Watch] Stream setup error:', err);
+            statusEl.textContent = '⚠️ Stream error: ' + err.message;
+          }
         });
 
         peer.on('error', (err) => {
