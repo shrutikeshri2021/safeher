@@ -7,10 +7,10 @@
 /* ── CSS Custom Properties — 112 Emergency App Theme ── */
 :root {
   /* Backgrounds — professional emergency service palette */
-  --bg-base:       #0B0F1A;
-  --bg-layer1:     #131B2E;
-  --bg-layer2:     #1A2540;
-  --bg-layer3:     #202D42;
+  --bg-base:       #2E0B36;
+  --bg-layer1:     #3D1547;
+  --bg-layer2:     #4A1F55;
+  --bg-layer3:     #5A2968;
 
   /* 112 Emergency Brand Colors */
   --primary:       #D32F2F;        /* Primary Emergency Red */
@@ -100,15 +100,15 @@
   --ease-out-expo:    0.5s cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Header/Nav blur */
-  --header-blur-bg:   rgba(11, 15, 26, 0.85);
-  --nav-blur-bg:      rgba(11, 15, 26, 0.9);
+  --header-blur-bg:   rgba(46, 11, 54, 0.85);
+  --nav-blur-bg:      rgba(46, 11, 54, 0.9);
   --scrollbar-thumb:  rgba(255,255,255,0.08);
 
   /* Mesh gradient background */
   --mesh-bg:
     radial-gradient(ellipse at 15% 5%, rgba(211,47,47,0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 85% 80%, rgba(21,101,192,0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 40%, rgba(46,125,50,0.04) 0%, transparent 40%),
+    radial-gradient(ellipse at 85% 80%, rgba(46,125,50,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 40%, rgba(21,101,192,0.04) 0%, transparent 40%),
     var(--bg-base);
 }
 
