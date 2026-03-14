@@ -1079,7 +1079,92 @@
     // Feature 8: Lingva Translate
     hookLingvaTranslate();
 
-    console.log('[FeatureIntegration] ✅ All feature hooks initialized (Features 1-8)');
+    // Feature 43: Initialize Agora.io Live Streaming
+    initAgoraStreaming();
+
+    console.log('[FeatureIntegration] ✅ All feature hooks initialized (Features 1-8 + Agora)');
+  }
+
+  /**
+   * Feature 43: Initialize Agora.io Live Streaming
+   */
+  async function initAgoraStreaming() {
+    try {
+      if (!window.AGORA_APP_ID) {
+        console.warn('[Agora] App ID not configured. Set window.AGORA_APP_ID in index.html');
+        return;
+      }
+
+      // Import Agora module
+      const { AgoraStreaming } = await import('./agoraStreaming.js');
+      
+      // Create global instance
+      window.agoraStreaming = new AgoraStreaming();
+      
+      // Initialize with App ID
+      const initialized = await window.agoraStreaming.init(window.AGORA_APP_ID);
+      
+      if (initialized) {
+        console.log('[Agora] ✅ Live streaming initialized. Ready for broadcasting!');
+        
+        // Hook into Live Stream button
+        const liveStreamBtn = document.getElementById('btn-live-stream');
+        if (liveStreamBtn) {
+          liveStreamBtn.addEventListener('click', handleAgoraStreamClick);
+        }
+      }
+    } catch (error) {
+      console.error('[Agora] Initialization error:', error);
+    }
+  }
+
+  /**
+   * Handle Live Stream button click with Agora
+   */
+  async function handleAgoraStreamClick(evt) {
+    try {
+      if (!window.agoraStreaming) {
+        console.error('[Agora] Streaming not initialized');
+        return;
+      }
+
+      // Check if already streaming
+      if (window.agoraStreaming.isLive()) {
+        console.log('[Agora] Already streaming. Showing stream bar.');
+        document.getElementById('stream-bar')?.classList.remove('hidden');
+        return;
+      }
+
+      // Generate room ID from emergency ID or timestamp
+      const roomId = 'safeher-' + (window.currentEmergencyId || Date.now());
+      
+      // Get video container
+      const videoContainer = document.getElementById('local-video-container') || 
+                             document.getElementById('stream-preview');
+      
+      if (!videoContainer) {
+        console.error('[Agora] Video container not found');
+        return;
+      }
+
+      // Start broadcasting
+      const result = await window.agoraStreaming.startBroadcasting(roomId, videoContainer);
+      
+      if (result.success) {
+        // Show stream bar
+        const streamBar = document.getElementById('stream-bar');
+        if (streamBar) {
+          streamBar.classList.remove('hidden');
+          document.getElementById('stream-status-text').textContent = '🔴 Streaming';
+        }
+
+        // Show share link
+        console.log('[Agora] 🎥 Share this link:', result.shareLink);
+        alert('🎥 Live streaming started!\n\nShare this link:\n' + result.shareLink);
+      }
+    } catch (error) {
+      console.error('[Agora] Stream click error:', error);
+    }
   }
 
   // Run on DOMContentLoaded (or immediately if already loaded)
@@ -1102,6 +1187,8 @@
     logNetworkStrategy,
     hookContactPicker,
     hookLingvaTranslate,
+    initAgoraStreaming,
+    handleAgoraStreamClick,
     get currentStrategy() { return currentAlertStrategy; }
   };
 
