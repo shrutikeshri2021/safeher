@@ -222,15 +222,16 @@ h4, h5, h6 { font-weight: 600; }
 p { line-height: 1.65; letter-spacing: 0.2px; }
 a { text-decoration: none; }
 
-/* Animated mesh bg — slow drift */
+/* Animated mesh bg — optimized drift */
 @keyframes meshDrift {
   0%   { background-position: 0% 0%, 100% 100%, 50% 40%; }
-  50%  { background-position: 30% 20%, 70% 60%, 80% 50%; }
+  50%  { background-position: 20% 15%, 80% 70%, 60% 45%; }
   100% { background-position: 0% 0%, 100% 100%, 50% 40%; }
 }
 body {
   background-size: 140% 140%, 140% 140%, 100% 100%, 100% 100%;
-  animation: meshDrift 20s ease-in-out infinite;
+  animation: meshDrift 30s ease-in-out infinite;
+  will-change: background-position;
 }
 
 /* Scrollbar */
@@ -656,18 +657,21 @@ body {
   content: '';
   inset: 0;
   border-color: rgba(211,47,47,0.2);
-  animation: ringRotate1 12s linear infinite;
+  animation: ringRotate1 16s linear infinite;
+  will-change: transform;
 }
 .sos-ring::after {
   content: '';
   inset: 14px;
   border-color: rgba(211,47,47,0.12);
-  animation: ringRotate2 16s linear infinite;
+  animation: ringRotate2 20s linear infinite;
+  will-change: transform;
 }
 .sos-ring-pulse {
   inset: 28px;
   border-color: rgba(211,47,47,0.08);
-  animation: ringRotate3 20s linear infinite;
+  animation: ringRotate3 24s linear infinite;
+  will-change: transform;
 }
 .sos-button {
   width: 150px; height: 150px;

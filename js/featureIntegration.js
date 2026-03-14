@@ -223,7 +223,9 @@
 
   function hookIntoEmailAlerts() {
     // Wait for emailjs to be available, then wrap emailjs.send
+    let attempts = 0;
     const checkEmailJS = setInterval(() => {
+      attempts++;
       if (typeof emailjs !== 'undefined' && emailjs.send) {
         clearInterval(checkEmailJS);
 
@@ -270,10 +272,8 @@
 
         console.log('[FeatureIntegration] ✅ EmailJS send wrapped for enhancement');
       }
+      if (attempts > 60) clearInterval(checkEmailJS); // Give up after 30s
     }, 500);
-
-    // Stop checking after 30 seconds
-    setTimeout(() => clearInterval(checkEmailJS), 30000);
   }
 
   /* ═══════════════════════════════════════════
@@ -282,7 +282,9 @@
      ═══════════════════════════════════════════ */
 
   function hookIntoSMSAlerts() {
+    let attempts = 0;
     const checkSMS = setInterval(() => {
+      attempts++;
       if (window.SMSAlert && window.SMSAlert.buildSOSMessage) {
         clearInterval(checkSMS);
 
@@ -332,9 +334,8 @@
 
         console.log('[FeatureIntegration] ✅ SMS buildSOSMessage wrapped for enhancement');
       }
+      if (attempts > 60) clearInterval(checkSMS); // Give up after 30s
     }, 500);
-
-    setTimeout(() => clearInterval(checkSMS), 30000);
   }
 
   /* ═══════════════════════════════════════════
@@ -614,7 +615,9 @@
 
   function hookNetworkAwareRouting() {
     // Wrap LiveStream.start to skip on slow networks
+    let attempts = 0;
     const checkStream = setInterval(() => {
+      attempts++;
       if (window.LiveStream && window.LiveStream.start) {
         clearInterval(checkStream);
 
@@ -641,8 +644,8 @@
 
         console.log('[FeatureIntegration] ✅ LiveStream wrapped with network-aware routing');
       }
+      if (attempts > 60) clearInterval(checkStream); // Give up after 30s
     }, 500);
-    setTimeout(() => clearInterval(checkStream), 30000);
 
     // Listen for network changes during active SOS
     try {
@@ -937,7 +940,9 @@
     });
 
     // Wrap CommunityMap.renderReports to inject translate buttons into popups
+    let attempts = 0;
     const checkCMap = setInterval(() => {
+      attempts++;
       if (window.CommunityMap && window.CommunityMap.renderReports) {
         clearInterval(checkCMap);
 
@@ -974,8 +979,8 @@
 
         console.log('[FeatureIntegration] ✅ Community map popups wrapped with translate button');
       }
+      if (attempts > 60) clearInterval(checkCMap); // Give up after 30s
     }, 500);
-    setTimeout(() => clearInterval(checkCMap), 30000);
   }
 
   /* ═══════════════════════════════════════════
