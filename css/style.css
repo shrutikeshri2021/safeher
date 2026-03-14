@@ -796,25 +796,25 @@ body {
   transition: border-color var(--transition);
 }
 .action-icon--blue {
-  background: linear-gradient(145deg, #1976D2, #0D47A1);
-  box-shadow: 0 6px 24px rgba(25,118,210,0.25);
+  background: linear-gradient(145deg, #1E88E5, #1565C0);
+  box-shadow: 0 6px 24px rgba(30,136,229,0.25);
 }
-.action-icon--blue::after { border-color: rgba(25,118,210,0.2); }
+.action-icon--blue::after { border-color: rgba(30,136,229,0.2); }
 .action-icon--red {
-  background: linear-gradient(145deg, #E53935, #B71C1C);
-  box-shadow: 0 6px 24px rgba(211,47,47,0.25);
+  background: linear-gradient(145deg, #2962FF, #1A237E);
+  box-shadow: 0 6px 24px rgba(41,98,255,0.25);
 }
-.action-icon--red::after { border-color: rgba(211,47,47,0.2); }
+.action-icon--red::after { border-color: rgba(41,98,255,0.2); }
 .action-icon--green {
-  background: linear-gradient(145deg, #43A047, #2E7D32);
-  box-shadow: 0 6px 24px rgba(46,125,50,0.25);
+  background: linear-gradient(145deg, #4CAF50, #388E3C);
+  box-shadow: 0 6px 24px rgba(76,175,80,0.25);
 }
-.action-icon--green::after { border-color: rgba(46,125,50,0.2); }
+.action-icon--green::after { border-color: rgba(76,175,80,0.2); }
 .action-icon--amber {
-  background: linear-gradient(145deg, #FB8C00, #E65100);
-  box-shadow: 0 6px 24px rgba(251,140,0,0.25);
+  background: linear-gradient(145deg, #FF9800, #E65100);
+  box-shadow: 0 6px 24px rgba(255,152,0,0.25);
 }
-.action-icon--amber::after { border-color: rgba(251,140,0,0.2); }
+.action-icon--amber::after { border-color: rgba(255,152,0,0.2); }
 .action-card--active {
   border-color: var(--red);
 }
@@ -2251,7 +2251,7 @@ body {
    RESPONSIVE
    ═══════════════════════════════════════════════ */
 @media (min-width: 430px) {
-  body { background-color: #060A14; }
+  body { background-color: var(--bg-base); }
   #app-header, .screen, #bottom-nav {
     margin-left: auto; margin-right: auto;
   }
