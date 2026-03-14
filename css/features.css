@@ -4,11 +4,13 @@
    Safe Route · Multilingual
    ═══════════════════════════════════════════════ */
 
-/* ── Button color variants ── */
-.btn--red    { background: var(--red);    color: #fff; border: none; }
-.btn--blue   { background: var(--blue);   color: #000; border: none; }
-.btn--amber  { background: var(--amber);  color: #000; border: none; }
-.btn--cyan   { background: var(--cyan);   color: #000; border: none; }
+/* ──────────────────────────────────────────────
+   Button color variants — 112 Emergency Theme
+   ──────────────────────────────────────────────── */
+.btn--red    { background: linear-gradient(135deg, #D32F2F, #B71C1C); color: #fff; border: none; box-shadow: 0 6px 18px rgba(211,47,47,0.25); }
+.btn--blue   { background: linear-gradient(135deg, #1565C0, #0D47A1); color: #fff; border: none; box-shadow: 0 6px 18px rgba(21,101,192,0.25); }
+.btn--amber  { background: linear-gradient(135deg, #F57C00, #E65100); color: #fff; border: none; box-shadow: 0 6px 18px rgba(245,124,0,0.25); }
+.btn--cyan   { background: linear-gradient(135deg, #1976D2, #1565C0); color: #fff; border: none; box-shadow: 0 6px 18px rgba(25,118,210,0.25); }
 
 /* ══════════════════════════════════════════════
    Feature 10 — Emergency Helpline Cards
@@ -18,46 +20,52 @@
 .helpline-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 12px;
   margin-top: 12px;
 }
 
 .helpline-card {
-  background: var(--bg-layer2);
-  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  border: var(--card-border);
+  backdrop-filter: var(--card-blur);
   border-radius: 14px;
-  padding: 16px 12px;
+  padding: 18px 12px;
   text-align: center;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+
+.helpline-card:hover {
+  border-color: rgba(211,47,47,0.2);
+  box-shadow: 0 6px 20px rgba(211,47,47,0.15);
+  transform: translateY(-2px);
 }
 
 .helpline-card:active {
   transform: scale(0.96);
 }
 
-.helpline-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-}
-
 .helpline-emoji {
-  font-size: 1.8rem;
+  font-size: 2rem;
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .helpline-number {
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
   display: block;
-  color: var(--text-primary);
+  color: var(--primary);
 }
 
 .helpline-label {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
-  margin-top: 4px;
+  margin-top: 6px;
   display: block;
+  font-weight: 600;
 }
 
 /* ── SOS Overlay Call Grid ── */
