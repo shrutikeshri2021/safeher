@@ -2317,9 +2317,7 @@ body {
    LIGHT MODE REFINEMENTS
    ═══════════════════════════════════════════════ */
 [data-theme="light"] .header-title {
-  background: linear-gradient(135deg, #009EC2, #7C5CC4, #E02E5A);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #000000;
 }
 [data-theme="light"] #app-header {
   box-shadow: 0 1px 8px rgba(0,0,0,0.04);
@@ -2330,8 +2328,8 @@ body {
   border-color: rgba(124,92,196,0.12);
 }
 [data-theme="light"] .sos-button {
-  background: radial-gradient(circle at 50% 35%, #FF6080 0%, #E02E5A 45%, #B01040 100%);
-  box-shadow: 0 6px 24px var(--red-glow), 0 2px 0 rgba(255,255,255,0.2) inset;
+  background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+  box-shadow: 0 6px 24px rgba(0,122,255,0.2), 0 2px 0 rgba(255,255,255,0.2) inset;
 }
 [data-theme="light"] .feature-card,
 [data-theme="light"] .contact-card,
@@ -2359,8 +2357,8 @@ body {
 }
 [data-theme="light"] .alert-content {
   background:
-    radial-gradient(circle at 50% 30%, rgba(224,46,90,0.08), transparent 50%),
-    linear-gradient(180deg, #FFF0F3, #FFE0E6, #FFF0F3);
+    radial-gradient(circle at 50% 30%, rgba(0,122,255,0.05), transparent 50%),
+    linear-gradient(180deg, #FFFFFF, #F8F9FF, #FFFFFF);
 }
 [data-theme="light"] .alert-content h2,
 [data-theme="light"] .alert-content p { color: var(--text-primary); }
@@ -2377,8 +2375,8 @@ body {
 [data-theme="light"] .fake-call-number { color: var(--text-muted); }
 [data-theme="light"] .countdown-content {
   background:
-    radial-gradient(circle at 50% 40%, rgba(224,46,90,0.06), transparent 50%),
-    linear-gradient(180deg, #FFF0F3, var(--bg-base));
+    radial-gradient(circle at 50% 40%, rgba(0,122,255,0.05), transparent 50%),
+    linear-gradient(180deg, #FFFFFF, var(--bg-base));
 }
 [data-theme="light"] .share-modal-content {
   background:
@@ -2405,7 +2403,7 @@ body {
   box-shadow: var(--card-shadow);
 }
 [data-theme="light"] .action-icon--blue { background: linear-gradient(145deg, #009EC2, #006E8A); }
-[data-theme="light"] .action-icon--red  { background: linear-gradient(145deg, #E02E5A, #B01040); }
+[data-theme="light"] .action-icon--red  { background: linear-gradient(145deg, #FF3B30, #FF2D20); }
 [data-theme="light"] .action-icon--green { background: linear-gradient(145deg, #00B85E, #008040); }
 [data-theme="light"] .action-icon--amber { background: linear-gradient(145deg, #B88600, #8A6400); }
 [data-theme="light"] .hist-stat-num { text-shadow: none; }
