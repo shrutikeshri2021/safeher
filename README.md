@@ -6,21 +6,23 @@
 
 <p align="center">
   <strong>A Progressive Web App (PWA) built to keep women safe -- anytime, anywhere.</strong><br/>
-  One-tap SOS . Automatic GPS email alerts . Evidence recording . Shake, crash & voice detection (9 languages) . Journey tracking with path deviation . Battery-aware emergency . Fake call escape . Community safety map . Safe walking routes . Live video streaming . Darkness detection . Geo-fence alerts . Multilingual UI . Full history log with Chart.js & D3 visualizations . Works offline
+  One-tap SOS . Automatic GPS email alerts . Evidence recording . Shake, crash & voice detection (9 languages) . Journey tracking with path deviation . Battery-aware emergency . Fake call escape . Community safety map . Safe walking routes . Live video streaming . Darkness detection . Geo-fence alerts . Multilingual UI . Light/dark theme . Full history log with Chart.js & D3 visualizations . IP geolocation fallback . What3Words address sharing . AI on-device transcription . Live speech transcription . Screen orientation lock . Network-aware alert routing . Contact picker API . Dynamic UI translation (20+ languages) . Works offline
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-PWA-blueviolet?style=flat-square" alt="PWA" />
   <img src="https://img.shields.io/badge/Frontend-HTML%20%7C%20CSS%20%7C%20JavaScript-orange?style=flat-square" alt="Tech" />
+  <img src="https://img.shields.io/badge/Features-42%20Complete-brightgreen?style=flat-square" alt="Features" />
   <img src="https://img.shields.io/badge/Maps-Leaflet.js-green?style=flat-square" alt="Leaflet" />
   <img src="https://img.shields.io/badge/Alerts-EmailJS-red?style=flat-square" alt="EmailJS" />
   <img src="https://img.shields.io/badge/Backend-Supabase-darkgreen?style=flat-square" alt="Supabase" />
   <img src="https://img.shields.io/badge/Routes-OpenRouteService-blue?style=flat-square" alt="ORS" />
   <img src="https://img.shields.io/badge/Charts-Chart.js%20%2B%20D3.js-ff6384?style=flat-square" alt="Charts" />
+  <img src="https://img.shields.io/badge/AI-Transformers.js%20Whisper-blueviolet?style=flat-square" alt="AI" />
+  <img src="https://img.shields.io/badge/Translate-Lingva%2020%2B%20Langs-9cf?style=flat-square" alt="Translation" />
   <img src="https://img.shields.io/badge/Video-PeerJS%20WebRTC-orange?style=flat-square" alt="PeerJS" />
   <img src="https://img.shields.io/badge/Storage-IndexedDB-yellow?style=flat-square" alt="IndexedDB" />
   <img src="https://img.shields.io/badge/Voice-9%20Languages-teal?style=flat-square" alt="Voice" />
-  <img src="https://img.shields.io/badge/i18n-EN%20%7C%20HI%20%7C%20TE-purple?style=flat-square" alt="i18n" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" />
 </p>
 
@@ -118,10 +120,12 @@ Women face safety threats in everyday life -- walking alone at night, commuting,
 - Hold the big red SOS button for **2 seconds** to activate
 - Full-screen red emergency overlay with **siren sound** and **vibration pattern**
 - **"I'm Safe -- Cancel Alert"** button to stop everything
-- **"Call Police"** button for direct emergency call (100/112)
+- **"Call Police"** button for direct emergency call (112)
 - **Minimize button** -- hides overlay, keeps siren + vibration + recording running in background
 - **SOS ACTIVE pill** -- fixed red badge at top of screen when minimized; tap to reopen
 - **SOS disabled in Safe Mode** -- button greyed out, non-functional, no pulse animation
+- **Auto-starts Live Stream** -- begins WebRTC camera feed for contacts to watch in real-time
+- **Auto-sends SMS** -- sends SOS text with GPS link to all emergency contacts via native SMS
 
 ### 2. Fully Automatic Email Alerts (via EmailJS)
 - Emails sent **automatically** to ALL contacts with email addresses -- zero manual steps
@@ -258,15 +262,19 @@ Women face safety threats in everyday life -- walking alone at night, commuting,
 
 ### 17. Chart.js Activity Insights
 - **Interactive charts** on History screen powered by **Chart.js 4.4.0**
-- Doughnut chart: event distribution by type
-- Bar chart: events over time (daily/weekly)
+- **Severity doughnut chart**: event distribution by type
+- **Last 7 days bar chart**: events over time (daily)
+- **Activity by hour bar chart**: event frequency by hour of day
+- **Top event types horizontal bar chart**: most common event categories
 - Summary stats: total events, critical count, average per day
 - Toggle panel -- charts load on demand to save resources
 
 ### 18. D3.js Visualizations
 - **Advanced data visualizations** powered by **D3.js v7**
-- Safety timeline: chronological event flow
-- Threat heatmap: visualize danger patterns by time of day
+- **Safety score gauge**: real-time safety score dial
+- **30-day heatmap**: calendar-style grid showing danger patterns by day
+- **Threat timeline**: chronological event flow with severity markers
+- **30-day trend sparkline**: compact trend line of safety events
 - Toggle panel with smooth animations
 - SVG-based for crisp rendering at any resolution
 
@@ -330,6 +338,7 @@ Women face safety threats in everyday life -- walking alone at night, commuting,
 - **Every safety event logged** to IndexedDB with full context:
   - Event type, severity (critical/warning/info/safe), timestamp
   - GPS location + address, trigger details, media info, contacts alerted
+- **App open sessions logged** -- every app launch creates an `app_opened` event for activity tracking
 - **ChatGPT-style date grouping**: Today, Yesterday, Previous 7 Days, February 2026, etc.
 - **Sticky section headers** between date groups
 - **Smart search autocomplete** with 3 suggestion types:
@@ -338,6 +347,7 @@ Women face safety threats in everyday life -- walking alone at night, commuting,
   - Locations -- matching addresses and coordinates
 - **Filter chips** by severity: All, Critical, Warning, Info, Safe
 - **Sort** by newest or oldest
+- **Load More pagination** -- events loaded in batches with "Load More" button for performance
 - **Expandable event cards** with full details (map link, trigger info, media, contacts)
 - **Export to CSV** -- download complete history as spreadsheet
 - **Clear all** with confirmation
@@ -392,6 +402,129 @@ Women face safety threats in everyday life -- walking alone at night, commuting,
 - **Auto-reload** when new SW version is detected -- users always get latest code
 - Offline fallback returns cached HTML when network fails
 
+### 33. Light / Dark Theme Toggle
+- **One-tap theme switch** in the app header (🌙 / ☀️ icon)
+- Toggles between dark mode (default) and light mode
+- Theme preference persisted in **localStorage** -- remembered across sessions
+- Updates `data-theme` attribute on `<html>` element
+- All CSS variables dynamically switch via `[data-theme="light"]` overrides
+- Smooth transition between themes
+
+### 34. Micro-Interactions & Animations
+- **Haptic feedback** -- 6ms vibration pulse on button taps
+- **Ripple effects** -- CSS ripple animation on pointer-down events
+- **Scroll reveal** -- IntersectionObserver-powered fade-in animations for cards as they enter viewport
+- **Icon bounce** -- spring animation on quick action taps
+- **Heartbeat** -- logo animation in header
+- **Spring transitions** -- cubic-bezier easing on toggles and interactive elements
+
+### 35. IP Geolocation Fallback
+- **Full fallback chain**: GPS → IP-based geolocation → Last Known GPS → null
+- **Free IP geolocation** via `ipapi.co` API (1,000 requests/day, no API key needed)
+- **Automatic GPS saving**: Every successful GPS fix is cached in localStorage for future fallback
+- **Graceful degradation**: When GPS unavailable, switches to IP-based location (with ~5km accuracy)
+- **Last known GPS cache**: Stores the most recent GPS coordinates for emergency alerts when all methods fail
+- **Location source warning labels**: Alerts include warnings when location is from IP or cache (not live GPS)
+- **IP data enrichment**: Shows estimated city/region/country from IP-based location
+- **Used in SOS emails & SMS**: GPS fallback automatically appended to emergency alerts
+- **Feature file**: `js/ipGeolocation.js` (ES module)
+- **Hooks into**: SOS alert system, email builder, SMS builder, geolocation events
+
+### 36. What3Words Location Sharing
+- **3-word address conversion**: Converts GPS coordinates to human-memorable 3-word addresses (e.g., `filled.count.soap`)
+- **Free API tier**: 1,000 calls/month from `api.what3words.com`
+- **Setup required**: Users must add API key to `js/what3words.js` line 9 (get free key at https://developer.what3words.com)
+- **Automatic geocoding**: On SOS, app converts GPS to What3Words and includes in alert
+- **Police-friendly format**: Displays as `///filled.count.soap` with clickable map link for law enforcement
+- **SMS-optimized**: Compact W3W format for SMS messages (under 160 chars)
+- **Session caching**: W3W results cached for 2 minutes to avoid repeat API calls during rapid SOS triggers
+- **Location stability check**: Cache reused only if location hasn't moved >0.001° (111m)
+- **Fallback on API failure**: Silently skips W3W enhancement if API is unreachable or key is invalid
+- **Feature file**: `js/what3words.js` (ES module)
+- **Hooks into**: Email alerts, SMS alerts, SOS message builder
+
+### 37. AI On-Device Transcription
+- **Whisper-tiny model**: 100% browser-based audio transcription via Hugging Face Transformers.js
+- **No server cost**: Model runs entirely client-side (~40MB, cached after first download)
+- **Auto-preload**: Whisper model preloaded 10 seconds after app launch (background, non-blocking)
+- **5-second audio chunks**: Records audio in 5-second intervals for fast transcription
+- **Automatic activation on SOS**: Transcription starts when SOS activates, stops when cancelled
+- **IndexedDB storage**: Transcripts saved to `SafeHerDB` v4 → `transcripts` store with UTC timestamp
+- **Line-by-line text**: Each 5-second chunk transcribed separately with `[HH:MM:SS] text` timestamps
+- **Evidence-grade**: Provides timestamped transcript of entire emergency for police/legal records
+- **Graceful fallback**: Fails silently on devices without WebGL support; app continues normally
+- **Feature file**: `js/aiTranscription.js` (ES module)
+- **CDN dependency**: Transformers.js loaded from `https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js`
+- **Hooks into**: SOS activation/deactivation, email alerts (mentions transcription is active)
+
+### 38. Live Speech Transcription
+- **Web Speech Recognition API**: Real-time continuous transcription during SOS using browser's native speech engine
+- **Lighter than AI**: Uses device's existing speech recognition (no model download needed)
+- **9 languages supported**: Can transcribe in any language configured; defaults to en-IN (Indian English)
+- **Interim + final results**: Shows partial transcripts in real-time, finalizes on speech pause
+- **Auto-restart on error**: If speech recognition drops (no-speech, network, audio-capture), auto-restarts within 1 second
+- **Session storage**: Transcript cached in sessionStorage key `safeher_live_transcript` during active SOS
+- **Download button**: "📄 Download SOS Transcript" button added to Recordings screen post-SOS
+- **Automatic save on SOS deactivate**: Transcripts automatically saved to IndexedDB
+- **Combine with AI transcription**: If both features active, users get both AI + Speech transcripts for comparison
+- **Non-intrusive**: Runs alongside existing voiceDetect.js keyword detection without interfering
+- **Feature file**: `js/liveTranscript.js` (ES module)
+- **Hooks into**: SOS activation/deactivation, recordings screen, transcript download
+
+### 39. Screen Orientation Lock
+- **Portrait lock during SOS**: Uses Screen Orientation API to lock phone to portrait orientation
+- **Video recording protection**: Prevents accidental rotation during back camera recording
+- **Non-critical feature**: Fails silently on unsupported browsers (desktops, older phones)
+- **Auto-unlock**: Screen automatically unlocked when SOS deactivates
+- **Transparent to user**: No UI elements; happens automatically in background
+- **Battery efficient**: Uses native orientation API (no polling)
+- **Feature file**: `js/orientationLock.js` (ES module)
+- **Hooks into**: SOS activation/deactivation (via featureIntegration)
+
+### 40. Network-Aware Smart Alert Routing
+- **Network quality detection**: Uses Network Information API to detect connection type (slow-2g, 2g, 3g, 4g, wifi)
+- **4 strategy levels**:
+  - `minimal` (slow-2g): SMS only, skip email + video stream
+  - `essential` (2g): SMS + email, skip video stream
+  - `standard` (3g): SMS + email + recording, video optional
+  - `full` (4g/wifi): Everything enabled
+- **Automatic feature gating**: On weak networks, app skips expensive features like live video streaming
+- **Smart alert priority**: Always sends SMS (uses native messaging, no data), email only on 2g+
+- **Real-time network monitoring**: Listens for network changes during active SOS and adjusts strategy
+- **User notification**: Toast message informs user when features are skipped due to slow connection
+- **Fallback on unsupported devices**: Assumes 4g if Network API not available
+- **Data saver mode**: Detects user's OS-level data saver preference and skips non-essential data
+- **Feature file**: `js/networkRouter.js` (ES module)
+- **Hooks into**: SOS activation, LiveStream.start(), network change listener
+
+### 41. Contact Picker API
+- **Native contacts import**: Lets users import contacts directly from phone's native contacts app (Android Chrome only)
+- **Multi-select**: Users can pick multiple contacts at once
+- **Auto-format**: Normalizes contact data for SafeHer (name, phone, email)
+- **Zero typing**: No manual contact entry needed; uses existing phone contacts
+- **Graceful fallback**: Button hidden on unsupported browsers; manual entry still works
+- **Filtered by relevance**: Only imports contacts with phone or email (skips contact-only entries)
+- **Toast feedback**: Shows count of contacts imported with success message
+- **Uses existing contacts.js**: Imported contacts added via existing `addContact()` function
+- **Feature file**: `js/contactPicker.js` (ES module)
+- **Hooks into**: Contacts screen (dynamic button injection)
+- **Browser support**: Android Chrome 43+, no support on desktop/iOS
+
+### 42. Lingva Translate - Dynamic UI Translation
+- **20+ language support**: Extends UI language picker from 3 (en/hi/te) to 20+ languages
+- **Free translation API**: Uses Lingva (open-source alternative to Google Translate, no API key needed)
+- **3 fallback instances**: Tries lingva.ml → lingva.garudalinux.org → lingva.lunar.icu if one is down
+- **Full UI translation**: Translates all UI text via Lingva for non-JSON languages
+- **Smart caching**: Translation results cached in memory Map to avoid repeat API calls
+- **Automatic language detection**: Detects user's selected language from localStorage/I18n module
+- **SOS email translation**: Emergency alert emails automatically translated to user's selected language
+- **URL/coordinate preservation**: Doesn't translate GPS coordinates, URLs, or What3Words addresses
+- **Community map translation**: Adds "🌐" translate button to community incident popups
+- **Supported languages**: English, Hindi, Telugu, Tamil, Bengali, Marathi, Gujarati, Kannada, Malayalam, Punjabi, Urdu, Odia, Assamese, Nepali, Sinhala, Arabic, French, German, Spanish, Portuguese
+- **Toast feedback**: Shows "🌐 Translating UI..." during language switch
+- **Feature file**: `js/lingvaTranslate.js` (ES module)
+- **Hooks into**: Language picker expansion, I18n.setLanguage() override, email translation, community map popups
+
 ---
 
 ## How Each Screen Works
@@ -404,25 +537,27 @@ The main dashboard with everything at your fingertips.
 | **Status Card** | Shows current safety state: "You're Safe" / "Journey Active" / "Emergency" |
 | **Battery Badge** (header) | Live battery % with color coding; auto-alerts at low levels |
 | **SOS Button** | Hold 2 seconds to trigger full emergency. Disabled in Safe Mode |
-| **Quick Actions Grid** | 4 buttons: Fake Call, Record, Share Location, Siren |
+| **Quick Actions Grid** | 5 buttons: Fake Call, Record, Share Location, Siren, Live Stream |
 | **Safe Mode Toggle** | Pauses all sensors, disables SOS |
 | **Shake Detection Toggle** | Enables/disables accelerometer + crash/fall monitoring |
 | **Voice Detection Toggle** | Enables/disables microphone keyword listening |
 | **Darkness Detection Toggle** | Enables/disables ambient light sensor monitoring |
 | **Geofence Toggle** | Enables/disables unsafe zone proximity monitoring |
 | **Emergency Medical Card** | Read-only preview of blood type, allergies, conditions |
+| **Theme Toggle** (header) | Switch between dark and light mode; preference saved to localStorage |
 
 **How SOS works step by step:**
 1. You hold the SOS button for 2 seconds
-2. A 5-second countdown appears (cancelable)
-3. If not cancelled: siren plays, phone vibrates, full-screen red overlay appears
-4. Back camera starts recording video + audio (torch OFF for stealth)
-5. App captures a snapshot from camera, uploads to image host
-6. Gets your GPS, reverse-geocodes to street address
-7. Sends automatic email to ALL saved contacts with: maps link, address, satellite view, navigation link, snapshot image
-8. Starts live location updates every 2 minutes
-9. You can **minimize** the overlay -- siren + recording keep running in background
-10. When safe: tap "I'm Safe" or tap SOS button again to deactivate everything
+2. Full emergency activates immediately: siren plays, phone vibrates, full-screen red overlay appears
+3. Back camera starts recording video + audio (torch OFF for stealth)
+4. App captures a snapshot from camera, uploads to image host
+5. Gets your GPS, reverse-geocodes to street address
+6. Sends automatic email to ALL saved contacts with: maps link, address, satellite view, navigation link, snapshot image
+7. Auto-sends SMS to all contacts with SOS message + GPS link
+8. Auto-starts Live Video Stream (WebRTC) for contacts to watch in real-time
+9. Starts live location updates every 2 minutes
+10. You can **minimize** the overlay -- siren + recording keep running in background
+11. When safe: tap "I'm Safe" or tap SOS button again to deactivate everything
 
 ### Screen 2: Journey
 Full journey tracking with map, waypoints, and safety features.
@@ -525,16 +660,16 @@ Complete activity log.
 | **OpenStreetMap** | Map tiles (free, no API key) |
 | **EmailJS** | Automatic email from browser (free: 200 emails/month) |
 | **Nominatim** | Free reverse geocoding (GPS to address) + destination search |
-| **Web Speech Recognition API** | Real-time voice keyword detection (9 languages) |
+| **Web Speech Recognition API** | Real-time voice keyword detection (9 languages) + live speech transcription |
 | **Battery Status API** | Battery level monitoring, charging detection |
 | **DeviceMotion API** | Accelerometer-based shake detection |
 | **MediaRecorder API** | Audio & video recording (vp8/opus + fallbacks) |
 | **ImageCapture API** | Camera snapshot without stopping video |
 | **Web Audio API** | Siren (sawtooth 440-880Hz) + ringtone (sine C5-E5-G5-E5) |
 | **Geolocation API** | Real-time GPS via watchPosition + getCurrentPosition |
-| **IndexedDB** | Client-side DB: recordings store + history store |
-| **localStorage** | Waypoints, contacts, safe mode state, settings |
-| **Service Worker** | Offline caching, cache-first strategy, versioned updates |
+| **IndexedDB** | Client-side DB: recordings store + history store + transcripts store (v4) |
+| **localStorage** | Waypoints, contacts, safe mode state, settings, cached GPS, live transcripts |
+| **Service Worker** | Offline caching, cache-first strategy, versioned updates (v60) |
 | **Web App Manifest** | PWA installability, home screen icon, standalone mode |
 | **Vibration API** | Emergency vibration patterns |
 | **Notification API** | System-level browser notifications |
@@ -546,7 +681,14 @@ Complete activity log.
 | **Chart.js 4.4.0** (CDN) | Interactive charts -- doughnut, bar, line |
 | **D3.js v7** (CDN) | Advanced SVG data visualizations |
 | **Screen Wake Lock API** | Prevent screen sleep during active safety features |
+| **Screen Orientation API** | Lock screen to portrait during SOS recording |
 | **Ambient Light Sensor API** | Darkness detection for unsafe environments |
+| **Network Information API** | Real-time network quality detection (slow-2g, 2g, 3g, 4g) |
+| **Contact Picker API** | Import contacts from phone's native contacts app (Android Chrome) |
+| **Transformers.js (Hugging Face)** | On-device AI speech recognition (Whisper-tiny model, ~40MB cached) |
+| **Lingva Translate** | Free, open-source translation API (20+ languages, 3 fallback instances) |
+| **ipapi.co** | Free IP-based geolocation (1,000 requests/day, no API key) |
+| **What3Words API** | 3-word address conversion for emergency locations (free tier: 1,000 calls/month, requires API key) |
 | **ntfy.sh** | Server-side push notifications (no app install needed) |
 | **Background Sync API** | Queue alerts offline, send when connectivity returns |
 | **WhatsApp / Telegram Deep Links** | Location sharing via wa.me and t.me URLs |
@@ -568,7 +710,7 @@ SafeHer/
 |-- README.md               # This file -- complete project documentation
 |
 |-- css/
-|   |-- style.css           # Complete dark theme UI (2780+ lines)
+|   |-- style.css           # Complete dark theme UI (2695+ lines)
 |   |                         CSS variables, SOS button pulse, battery badge,
 |   |                         journey phases, waypoints, check-in timer,
 |   |                         history cards, overlays, bottom navigation
@@ -663,15 +805,15 @@ USER OPENS APP (browser or PWA home screen)
   AppState.sosActive = true
   AppState.threatScore = 100
               |
-  +-----------+-----------+-----------+-----------+
-  |           |           |           |           |
-  v           v           v           v           v
-Play       Start       Show       Start Back   Send Emergency
-Siren      Vibrate     Alert      Camera Rec   Alert Emails
-(440Hz)    Pattern     Overlay    (1.5h max)   (to all contacts)
-                                                    |
-                          +-----------+-----------+-+
-                          |           |           |
+  +-----------+-----------+-----------+-----------+-----------+
+  |           |           |           |           |           |
+  v           v           v           v           v           v
+Play       Start       Show       Start Back   Send Emergency  Start
+Siren      Vibrate     Alert      Camera Rec   Alert Emails    Live
+(440Hz)    Pattern     Overlay    (1.5h max)   (to all)        Stream
+                                                    |           |
+                          +-----------+-----------+-+       Auto-send
+                          |           |           |         SMS Alert
                           v           v           v
                      Get GPS     Capture      Reverse
                      Location    Snapshot     Geocode
@@ -874,7 +1016,7 @@ Siren      Vibrate     Alert      Camera Rec   Alert Emails
 - Battery Status API monitoring, 3 alert thresholds (15%/10%/5%), low-power GPS mode, header battery badge, charging reset
 
 ### Step 17: Feature Cleanup & Recording Fix
-- Removed Walk-Me-Home dead man's switch, Destination & ETA, and Send My Location features
+- Removed Walk-Me-Home dead man's switch, Destination & ETA, and Send My Location features (HTML, JS, and CSS fully cleaned up)
 - Fixed single-tap recording (debounce flag, preventDefault, simplified stop guard)
 - Improved pause/resume as a clear toggle button (Pause amber / Resume green)
 

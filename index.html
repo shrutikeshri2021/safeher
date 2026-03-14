@@ -19,6 +19,11 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/features.css" />
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script type="module">
+    // Transformers.js — Hugging Face on-device AI (for Feature 3: AI Transcription)
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js';
+    window.TransformersPipeline = pipeline;
+  </script>
   <title>SafeHer</title>
 </head>
 <body>
@@ -819,7 +824,7 @@
       <p id="alert-overlay-msg">Sending your location and alert to emergency contacts…</p>
       <div class="alert-actions">
         <button id="btn-stop-alert" class="btn btn--white btn--lg">I'm Safe — Cancel Alert</button>
-        <button id="btn-call-police" class="btn btn--ghost-white btn--sm">Call Police (100)</button>
+        <button id="btn-call-police" class="btn btn--ghost-white btn--sm">Call Police (112)</button>
         <div class="sos-call-grid">
           <button class="btn btn--ghost-white btn--sm" onclick="EmergencyCall.call('universal')">🆘 112</button>
           <button class="btn btn--ghost-white btn--sm" onclick="EmergencyCall.call('women')">👩‍💼 1091</button>
@@ -1075,6 +1080,8 @@
   <script src="js/communityMap.js"></script>
   <script src="js/safeRoute.js"></script>
   <script src="js/i18n.js"></script>
+  <!-- New Feature Integration Layer (Features 1-4: IP Geolocation, What3Words, AI Transcription, Live Transcript) -->
+  <script src="js/featureIntegration.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

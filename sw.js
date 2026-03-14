@@ -1,7 +1,7 @@
 /* ───────────────────────────────────────────────
    SafeHer – Service Worker (Cache-first + offline)
    ─────────────────────────────────────────────── */
-const CACHE_NAME = 'safeher-v57';
+const CACHE_NAME = 'safeher-v60';
 const LOCAL_ASSETS = [
   '/',
   '/index.html',
@@ -34,6 +34,15 @@ const LOCAL_ASSETS = [
   '/js/communityMap.js',
   '/js/safeRoute.js',
   '/js/i18n.js',
+  '/js/ipGeolocation.js',
+  '/js/what3words.js',
+  '/js/aiTranscription.js',
+  '/js/liveTranscript.js',
+  '/js/featureIntegration.js',
+  '/js/orientationLock.js',
+  '/js/networkRouter.js',
+  '/js/contactPicker.js',
+  '/js/lingvaTranslate.js',
   '/watch.html',
   '/css/features.css',
   '/assets/i18n/en.json',
@@ -50,7 +59,8 @@ const CDN_ASSETS = [
   'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
   'https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js',
-  'https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js'
+  'https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js',
+  'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js'
 ];
 
 /* ── Install ─────────────────────────────────── */
