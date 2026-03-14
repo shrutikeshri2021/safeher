@@ -7,10 +7,10 @@
 /* ── CSS Custom Properties — 112 Emergency App Theme ── */
 :root {
   /* Backgrounds — professional emergency service palette */
-  --bg-base:       #2E0B36;
-  --bg-layer1:     #3D1547;
-  --bg-layer2:     #4A1F55;
-  --bg-layer3:     #5A2968;
+  --bg-base:       #47088b;
+  --bg-layer1:     #5a1a9c;
+  --bg-layer2:     #6d2cad;
+  --bg-layer3:     #7f3ebe;
 
   /* 112 Emergency Brand Colors */
   --primary:       #D32F2F;        /* Primary Emergency Red */
@@ -100,8 +100,8 @@
   --ease-out-expo:    0.5s cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Header/Nav blur */
-  --header-blur-bg:   rgba(46, 11, 54, 0.85);
-  --nav-blur-bg:      rgba(46, 11, 54, 0.9);
+  --header-blur-bg:   rgba(71, 8, 139, 0.85);
+  --nav-blur-bg:      rgba(71, 8, 139, 0.9);
   --scrollbar-thumb:  rgba(255,255,255,0.08);
 
   /* Mesh gradient background */
@@ -114,10 +114,10 @@
 
 /* ── Light Mode — 112 Emergency App Light Theme ───────────── */
 [data-theme="light"] {
-  --bg-base:       #FAFBFC;
-  --bg-layer1:     #F3F4F6;
-  --bg-layer2:     #FFFFFF;
-  --bg-layer3:     #F9FAFB;
+  --bg-base:       #eea6b5;
+  --bg-layer1:     #f5d4dc;
+  --bg-layer2:     #ffffff;
+  --bg-layer3:     #f9f3f5;
 
   --cyan:          #1976D2;
   --cyan-glow:     rgba(25,118,210,0.15);
@@ -180,8 +180,8 @@
   --shadow-md:        0 6px 16px rgba(211,47,47,0.12);
   --shadow-lg:        0 8px 32px rgba(0,0,0,0.08);
 
-  --header-blur-bg:   rgba(248, 249, 255, 0.85);
-  --nav-blur-bg:      rgba(255, 255, 255, 0.88);
+  --header-blur-bg:   rgba(238, 166, 181, 0.85);
+  --nav-blur-bg:      rgba(238, 166, 181, 0.88);
   --scrollbar-thumb:  rgba(0,0,0,0.08);
 
   --mesh-bg:
