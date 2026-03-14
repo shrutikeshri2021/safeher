@@ -7,50 +7,50 @@
 /* ── CSS Custom Properties — 112 Emergency App Theme ── */
 :root {
   /* Backgrounds — professional emergency service palette */
-  --bg-base:       #47088b;
-  --bg-layer1:     #5a1a9c;
-  --bg-layer2:     #6d2cad;
-  --bg-layer3:     #7f3ebe;
+  --bg-base:       #121212;
+  --bg-layer1:     #1e1e1e;
+  --bg-layer2:     #2a2a2a;
+  --bg-layer3:     #363636;
 
   /* 112 Emergency Brand Colors */
-  --primary:       #D32F2F;        /* Primary Emergency Red */
-  --primary-dark:  #B71C1C;        /* Dark Red */
-  --accent:        #1565C0;        /* Accent Blue */
-  --success:       #2E7D32;        /* Success Green */
-  --warning:       #F57C00;        /* Warning Orange */
-  --text-main:     #E5E7EB;        /* Neutral Text */
+  --primary:       #1E88E5;        /* Primary Blue */
+  --primary-dark:  #1565C0;        /* Dark Blue */
+  --accent:        #00E5FF;        /* Accent Cyan */
+  --success:       #4CAF50;        /* Success Green */
+  --warning:       #FF9800;        /* Warning Orange */
+  --text-main:     #FFFFFF;        /* White Text */
 
-  /* Updated Accents — emergency palette */
-  --cyan:          #1976D2;
-  --cyan-glow:     rgba(25,118,210,0.25);
-  --cyan-soft:     rgba(25,118,210,0.08);
+  /* Updated Accents — blue palette */
+  --cyan:          #00E5FF;
+  --cyan-glow:     rgba(0,229,255,0.25);
+  --cyan-soft:     rgba(0,229,255,0.08);
 
-  --red:           #D32F2F;
-  --red-glow:      rgba(211,47,47,0.25);
-  --red-soft:      rgba(211,47,47,0.08);
+  --red:           #1E88E5;
+  --red-glow:      rgba(30,136,229,0.25);
+  --red-soft:      rgba(30,136,229,0.08);
 
-  --purple:        #6A1B9A;
-  --purple-glow:   rgba(106,27,154,0.25);
-  --purple-soft:   rgba(106,27,154,0.08);
+  --purple:        #2962FF;
+  --purple-glow:   rgba(41,98,255,0.25);
+  --purple-soft:   rgba(41,98,255,0.08);
 
-  --blue:          #1565C0;
-  --blue-glow:     rgba(21,101,192,0.25);
-  --blue-soft:     rgba(21,101,192,0.08);
+  --blue:          #1E88E5;
+  --blue-glow:     rgba(30,136,229,0.25);
+  --blue-soft:     rgba(30,136,229,0.08);
 
-  --green:         #2E7D32;
-  --green-glow:    rgba(46,125,50,0.25);
-  --green-soft:    rgba(46,125,50,0.08);
+  --green:         #4CAF50;
+  --green-glow:    rgba(76,175,80,0.25);
+  --green-soft:    rgba(76,175,80,0.08);
 
-  --amber:         #F57C00;
-  --amber-glow:    rgba(245,124,0,0.25);
-  --amber-soft:    rgba(245,124,0,0.08);
+  --amber:         #FF9800;
+  --amber-glow:    rgba(255,152,0,0.25);
+  --amber-soft:    rgba(255,152,0,0.08);
 
-  --teal:          #00796B;
-  --teal-glow:     rgba(0,121,107,0.25);
-  --teal-soft:     rgba(0,121,107,0.08);
+  --teal:          #00E5FF;
+  --teal-glow:     rgba(0,229,255,0.25);
+  --teal-soft:     rgba(0,229,255,0.08);
 
-  /* Brand Gradient — professional emergency red to blue */
-  --brand-gradient: linear-gradient(135deg, #D32F2F 0%, #1565C0 100%);
+  /* Brand Gradient — blue to cyan */
+  --brand-gradient: linear-gradient(135deg, #1E88E5 0%, #00E5FF 100%);
 
   /* Backward-compat aliases (used by JS modules) */
   --accent-red:       var(--red);
@@ -67,17 +67,17 @@
   --accent-amber-soft:var(--amber-soft);
 
   /* Text */
-  --text-primary:   #E5E7EB;
-  --text-secondary: #9CA3AF;
-  --text-muted:     #6B7280;
+  --text-primary:   #FFFFFF;
+  --text-secondary: #B0BEC5;
+  --text-muted:     #90A4AE;
 
   /* Borders & Surfaces — professional glassmorphism */
-  --border-color:     rgba(255,255,255,0.08);
-  --border-glow:      rgba(211,47,47,0.2);
+  --border-color:     rgba(255,255,255,0.12);
+  --border-glow:      rgba(30,136,229,0.2);
   --card-bg:          rgba(255,255,255,0.05);
-  --card-border:      1px solid rgba(255,255,255,0.08);
+  --card-border:      1px solid rgba(255,255,255,0.12);
   --card-blur:        blur(20px) saturate(180%);
-  --card-shadow:      0 10px 32px rgba(0,0,0,0.4), 0 2px 0 rgba(255,255,255,0.05) inset;
+  --card-shadow:      0 10px 32px rgba(0,0,0,0.5), 0 2px 0 rgba(255,255,255,0.08) inset;
   --card-radius:      16px;
 
   /* Legacy aliases */
@@ -93,22 +93,22 @@
   --radius-lg:        20px;
   --radius-full:      999px;
   --shadow-sm:        0 2px 8px rgba(0,0,0,0.3);
-  --shadow-md:        0 6px 20px rgba(211,47,47,0.15);
-  --shadow-lg:        0 12px 40px rgba(211,47,47,0.2);
+  --shadow-md:        0 6px 20px rgba(30,136,229,0.15);
+  --shadow-lg:        0 12px 40px rgba(30,136,229,0.2);
   --transition:       0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --spring:           0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out-expo:    0.5s cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Header/Nav blur */
-  --header-blur-bg:   rgba(71, 8, 139, 0.85);
-  --nav-blur-bg:      rgba(71, 8, 139, 0.9);
-  --scrollbar-thumb:  rgba(255,255,255,0.08);
+  --header-blur-bg:   rgba(18, 18, 18, 0.85);
+  --nav-blur-bg:      rgba(18, 18, 18, 0.9);
+  --scrollbar-thumb:  rgba(255,255,255,0.12);
 
   /* Mesh gradient background */
   --mesh-bg:
-    radial-gradient(ellipse at 15% 5%, rgba(211,47,47,0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 85% 80%, rgba(46,125,50,0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 40%, rgba(21,101,192,0.04) 0%, transparent 40%),
+    radial-gradient(ellipse at 15% 5%, rgba(30,136,229,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 80%, rgba(0,229,255,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 40%, rgba(76,175,80,0.04) 0%, transparent 40%),
     var(--bg-base);
 }
 
@@ -656,20 +656,20 @@ body {
 .sos-ring::before {
   content: '';
   inset: 0;
-  border-color: rgba(211,47,47,0.2);
+  border-color: rgba(30,136,229,0.2);
   animation: ringRotate1 16s linear infinite;
   will-change: transform;
 }
 .sos-ring::after {
   content: '';
   inset: 14px;
-  border-color: rgba(211,47,47,0.12);
+  border-color: rgba(0,229,255,0.12);
   animation: ringRotate2 20s linear infinite;
   will-change: transform;
 }
 .sos-ring-pulse {
   inset: 28px;
-  border-color: rgba(211,47,47,0.08);
+  border-color: rgba(0,229,255,0.08);
   animation: ringRotate3 24s linear infinite;
   will-change: transform;
 }
@@ -677,7 +677,7 @@ body {
   width: 150px; height: 150px;
   border-radius: 50%; border: none;
   background:
-    radial-gradient(circle at 50% 35%, #FF5252 0%, #D32F2F 40%, #B71C1C 100%);
+    radial-gradient(circle at 50% 35%, #2196F3 0%, #1E88E5 40%, #1565C0 100%);
   color: #fff;
   font-family: 'Outfit', sans-serif;
   font-size: 2.4rem; font-weight: 900;
@@ -685,8 +685,8 @@ body {
   cursor: pointer;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   box-shadow:
-    0 12px 50px rgba(211,47,47,0.4),
-    0 0 100px rgba(211,47,47,0.2),
+    0 12px 50px rgba(30,136,229,0.4),
+    0 0 100px rgba(0,229,255,0.2),
     0 2px 0 rgba(255,255,255,0.2) inset,
     0 -4px 12px rgba(0,0,0,0.3) inset;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -710,8 +710,8 @@ body {
 .sos-button.holding {
   transform: scale(0.85);
   box-shadow:
-    0 6px 80px rgba(211,47,47,0.4),
-    0 0 140px rgba(211,47,47,0.2),
+    0 6px 80px rgba(30,136,229,0.4),
+    0 0 140px rgba(0,229,255,0.2),
     0 2px 0 rgba(255,255,255,0.12) inset;
   animation: glowPulse 0.4s ease-in-out infinite;
 }
