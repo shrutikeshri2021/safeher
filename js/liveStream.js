@@ -297,29 +297,33 @@ const LiveStream = {
     const btn = document.getElementById('btn-live-stream');
     if (!btn) {
       console.error('[Stream] ❌ btn-live-stream not found in DOM');
-      return;
+      console.log('[Stream] Available elements:', document.querySelectorAll('[id*="live"]').length);
+      return false;
     }
 
+    console.log('[Stream] Button found! Adding click listener...');
     btn.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('[Stream] Button clicked!');
+      console.log('[Stream] 🔴 Button clicked!');
       await this.toggle();
     });
 
     console.log('[Stream] ✅ Module initialized - ready to stream');
+    return true;
   }
 };
 
-// Initialize when DOM is ready
+// Initialize immediately - don't wait
+console.log('[Stream] Script loaded, waiting for DOM...');
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('[Stream] DOMContentLoaded - initializing');
+    console.log('[Stream] DOMContentLoaded triggered');
     LiveStream.init();
   });
 } else {
-  console.log('[Stream] DOM already loaded - initializing immediately');
-  LiveStream.init();
+  console.log('[Stream] DOM already ready');
+  setTimeout(() => LiveStream.init(), 100);
 }
 
 window.LiveStream = LiveStream;

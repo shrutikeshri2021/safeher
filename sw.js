@@ -1,7 +1,7 @@
 /* ───────────────────────────────────────────────
    SafeHer – Service Worker (Cache-first + offline)
    ─────────────────────────────────────────────── */
-const CACHE_NAME = 'safeher-v75';
+const CACHE_NAME = 'safeher-v76';
 const LOCAL_ASSETS = [
   '/',
   '/index.html',

@@ -1097,6 +1097,27 @@
   <script type="module" src="js/agoraStreaming.js"></script>
   <!-- New Feature Integration Layer (Features 1-4: IP Geolocation, What3Words, AI Transcription, Live Transcript) -->
   <script src="js/featureIntegration.js"></script>
+  
+  <!-- QUICK FIX: Initialize Live Stream manually -->
+  <script>
+    console.log('[INIT] Waiting for LiveStream...');
+    function initLiveStream() {
+      if (typeof LiveStream === 'undefined') {
+        console.warn('[INIT] LiveStream not ready yet, retrying...');
+        setTimeout(initLiveStream, 100);
+        return;
+      }
+      console.log('[INIT] LiveStream found! Initializing...');
+      LiveStream.init();
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initLiveStream);
+    } else {
+      initLiveStream();
+    }
+  </script>
+  
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
